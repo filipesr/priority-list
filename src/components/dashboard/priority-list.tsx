@@ -6,15 +6,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount, type RateMap } from "@/lib/currency";
 import { calculatePriorityScore, sortByPriority } from "@/lib/priority";
 import { CATEGORY_LABELS } from "@/lib/constants";
 import { PriorityBadge } from "@/components/expenses/priority-badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Expense } from "@/lib/types";
+import type { Expense, SupportedCurrency } from "@/lib/types";
 
-export function PriorityListWidget({ expenses }: { expenses: Expense[] }) {
+interface PriorityListWidgetProps {
+  expenses: Expense[];
+  preferredCurrency: SupportedCurrency;
+  rates: RateMap;
+}
+
+export function PriorityListWidget({ expenses, preferredCurrency, rates }: PriorityListWidgetProps) {
   const sorted = sortByPriority(expenses).slice(0, 10);
 
   if (sorted.length === 0) {
@@ -72,7 +78,10 @@ export function PriorityListWidget({ expenses }: { expenses: Expense[] }) {
               </div>
               <PriorityBadge priority={expense.priority} />
               <span className="font-semibold tabular-nums">
-                {formatCurrency(expense.amount)}
+                {formatCurrency(
+                  convertAmount(expense.amount, (expense.currency ?? "BRL") as SupportedCurrency, preferredCurrency, rates),
+                  preferredCurrency
+                )}
               </span>
               <Badge variant="secondary" className="text-xs">
                 {calculatePriorityScore(expense)}pts

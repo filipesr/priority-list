@@ -5,6 +5,7 @@ import {
   getMonthlySpending,
   getPriorityListExpenses,
 } from "@/actions/dashboard";
+import { getLatestRates } from "@/actions/exchange-rates";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { CategoryChart } from "@/components/dashboard/category-chart";
 import { CostCenterChart } from "@/components/dashboard/cost-center-chart";
@@ -13,13 +14,14 @@ import { MonthlyTrend } from "@/components/dashboard/monthly-trend";
 import { PriorityListWidget } from "@/components/dashboard/priority-list";
 
 export default async function DashboardPage() {
-  const [statsResult, categoryResult, costCenterResult, monthlyResult, expensesResult] =
+  const [statsResult, categoryResult, costCenterResult, monthlyResult, expensesResult, rates] =
     await Promise.all([
       getDashboardStats(),
       getCategoryBreakdown(),
       getCostCenterBreakdown(),
       getMonthlySpending(),
       getPriorityListExpenses(),
+      getLatestRates(),
     ]);
 
   const currency = statsResult.data?.preferredCurrency ?? "BRL";
@@ -55,7 +57,7 @@ export default async function DashboardPage() {
       )}
 
       {expensesResult.success && (
-        <PriorityListWidget expenses={expensesResult.data ?? []} />
+        <PriorityListWidget expenses={expensesResult.data ?? []} preferredCurrency={currency} rates={rates} />
       )}
     </div>
   );

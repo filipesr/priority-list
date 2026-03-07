@@ -21,6 +21,8 @@ import { Trash2 } from "lucide-react";
 import { deleteIncome } from "@/actions/incomes";
 import { toast } from "sonner";
 import type { Income, IncomeType, SupportedCurrency, RecurrenceFrequency } from "@/lib/types";
+import { useSortableTable } from "@/hooks/use-sortable-table";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 interface IncomeListProps {
   incomes: Income[];
@@ -37,6 +39,8 @@ export function IncomeList({ incomes }: IncomeListProps) {
     }
   }
 
+  const { sorted, sortKey, sortDirection, onSort } = useSortableTable(incomes);
+
   if (incomes.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -50,16 +54,16 @@ export function IncomeList({ incomes }: IncomeListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Tipo</TableHead>
+            <SortableHeader label="Nome" sortKey="name" active={sortKey === "name"} direction={sortDirection} onSort={onSort} />
+            <SortableHeader label="Valor" sortKey="amount" active={sortKey === "amount"} direction={sortDirection} onSort={onSort} />
+            <SortableHeader label="Tipo" sortKey="type" active={sortKey === "type"} direction={sortDirection} onSort={onSort} />
             <TableHead className="hidden md:table-cell">Recorrência</TableHead>
             <TableHead className="hidden lg:table-cell">Descrição</TableHead>
             <TableHead className="w-[60px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {incomes.map((income) => (
+          {sorted.map((income) => (
             <TableRow key={income.id}>
               <TableCell className="font-medium">{income.name}</TableCell>
               <TableCell>

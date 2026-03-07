@@ -1,5 +1,6 @@
 export type {
   Expense,
+  ExpenseEntry,
   ExpenseCategory,
   ExpenseType,
   ExpenseStatus,

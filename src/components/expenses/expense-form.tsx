@@ -60,7 +60,7 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
       currency: expense?.currency ?? "BRL",
       category: expense?.category ?? "outro",
       custom_category: expense?.custom_category ?? "",
-      type: expense?.type ?? "esporadico",
+      type: expense?.is_recurring ? "recorrente" : (expense?.type ?? "esporadico"),
       priority: expense?.priority ?? "medium",
       urgency: expense?.urgency ?? "can_wait",
       cost_center: expense?.cost_center ?? "outros",
@@ -95,7 +95,8 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
   }
 
   async function onSubmit(data: ExpenseFormData) {
-    if (data.type === "recorrente") {
+    if (data.type === "recorrente" || data.is_recurring) {
+      data.type = "recorrente";
       data.is_recurring = true;
       data.due_date = "";
     } else {

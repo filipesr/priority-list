@@ -21,6 +21,8 @@ import { Pencil, Trash2 } from "lucide-react";
 import { deletePendencia } from "@/actions/pendencias";
 import { toast } from "sonner";
 import type { Pendencia } from "@/lib/types";
+import { useSortableTable } from "@/hooks/use-sortable-table";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 interface PendenciaListProps {
   pendencias: Pendencia[];
@@ -43,6 +45,8 @@ export function PendenciaList({
     }
   }
 
+  const { sorted, sortKey, sortDirection, onSort } = useSortableTable(pendencias);
+
   if (pendencias.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -59,19 +63,19 @@ export function PendenciaList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Valor Estimado</TableHead>
-            <TableHead className="hidden md:table-cell">Categoria</TableHead>
-            <TableHead>Prioridade</TableHead>
-            <TableHead className="hidden lg:table-cell">Urgência</TableHead>
-            <TableHead className="hidden lg:table-cell">Centro de Custo</TableHead>
+            <SortableHeader label="Nome" sortKey="name" active={sortKey === "name"} direction={sortDirection} onSort={onSort} />
+            <SortableHeader label="Valor Estimado" sortKey="estimated_amount" active={sortKey === "estimated_amount"} direction={sortDirection} onSort={onSort} />
+            <SortableHeader label="Categoria" sortKey="category" active={sortKey === "category"} direction={sortDirection} onSort={onSort} className="hidden md:table-cell" />
+            <SortableHeader label="Prioridade" sortKey="priority" active={sortKey === "priority"} direction={sortDirection} onSort={onSort} />
+            <SortableHeader label="Urgência" sortKey="urgency" active={sortKey === "urgency"} direction={sortDirection} onSort={onSort} className="hidden lg:table-cell" />
+            <SortableHeader label="Centro de Custo" sortKey="cost_center" active={sortKey === "cost_center"} direction={sortDirection} onSort={onSort} className="hidden lg:table-cell" />
             <TableHead className="hidden lg:table-cell">Autor</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[120px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {pendencias.map((pendencia) => {
+          {sorted.map((pendencia) => {
             const pendCurrency = (pendencia.currency ?? "BRL") as SupportedCurrency;
             const showConverted = rates && pendencia.estimated_amount && pendCurrency !== preferredCurrency;
 

@@ -59,12 +59,20 @@ export interface Income {
   updated_at: string;
 }
 
+export interface ExpenseEntry {
+  date: string;       // "YYYY-MM-DD"
+  amount: number;
+  description?: string;
+}
+
 export interface Expense {
   id: string;
   user_id: string;
   name: string;
   description: string | null;
   amount: number;
+  executed_amount: number;
+  expense_entries: ExpenseEntry[];
   currency: SupportedCurrency;
   category: ExpenseCategory;
   custom_category: string | null;

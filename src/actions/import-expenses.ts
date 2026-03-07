@@ -33,6 +33,7 @@ export async function importExpenses(
   const rows = expenses.map((e) => ({
     ...e,
     user_id: user.id,
+    currency: e.currency ?? "BRL",
     cost_center: e.cost_center ?? "outros",
     created_by_name: createdByName,
     due_date: e.due_date || null,
