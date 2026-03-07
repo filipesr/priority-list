@@ -9,17 +9,23 @@ import { expenseSchema, type ExpenseFormData } from "@/lib/validations/expense";
  * Colunas opcionais: categoria, tipo, prioridade, urgencia, vencimento,
  *   descricao, notas, frequencia, dia_recorrencia, mes_recorrencia
  *
- * Exemplo:
+ * ### Recorrência
+ * Quando tipo = "recorrente", o campo `frequencia` define a periodicidade:
+ * - **semanal**: `dia_recorrencia` = dia da semana (0=Domingo ... 6=Sábado)
+ * - **mensal** (padrão): `dia_recorrencia` = dia do mês (1-31)
+ * - **anual**: `dia_recorrencia` = dia (1-31), `mes_recorrencia` = mês (1-12)
+ *
+ * Exemplo CSV:
  * ```
- * nome;valor;categoria;tipo;prioridade;urgencia;frequencia;dia_recorrencia
- * Aluguel;2500;casa;recorrente;critical;urgent;mensal;5
- * Dentista;800;saude;esporadico;high;can_wait;;
+ * nome;valor;categoria;tipo;prioridade;urgencia;frequencia;dia_recorrencia;mes_recorrencia
+ * Aluguel;2500;casa;recorrente;critical;urgent;mensal;5;
+ * Netflix;45;pessoais;recorrente;low;flexible;mensal;15;
+ * Feira;200;casa;recorrente;medium;can_wait;semanal;6;
+ * IPVA;1800;pessoais;recorrente;high;urgent;anual;15;1
+ * Dentista;800;saude;esporadico;high;can_wait;;;
  * ```
  *
- * ## Formato JSON
- * Array de objetos com os mesmos campos do CSV.
- *
- * Exemplo:
+ * Exemplo JSON:
  * ```json
  * [
  *   {
@@ -31,36 +37,61 @@ import { expenseSchema, type ExpenseFormData } from "@/lib/validations/expense";
  *     "urgencia": "urgent",
  *     "frequencia": "mensal",
  *     "dia_recorrencia": 5
+ *   },
+ *   {
+ *     "nome": "IPVA",
+ *     "valor": 1800,
+ *     "categoria": "pessoais",
+ *     "tipo": "recorrente",
+ *     "prioridade": "high",
+ *     "urgencia": "urgent",
+ *     "frequencia": "anual",
+ *     "dia_recorrencia": 15,
+ *     "mes_recorrencia": 1
  *   }
  * ]
  * ```
  */
 
 const FIELD_MAP: Record<string, string> = {
+  // PT
   nome: "name",
-  name: "name",
   valor: "amount",
-  amount: "amount",
   categoria: "category",
-  category: "category",
   tipo: "type",
-  type: "type",
   prioridade: "priority",
-  priority: "priority",
   urgencia: "urgency",
-  urgency: "urgency",
+  urgência: "urgency",
   vencimento: "due_date",
-  due_date: "due_date",
   descricao: "description",
-  description: "description",
+  descrição: "description",
   notas: "notes",
-  notes: "notes",
   frequencia: "recurrence_frequency",
-  recurrence_frequency: "recurrence_frequency",
+  frequência: "recurrence_frequency",
   dia_recorrencia: "recurrence_day",
-  recurrence_day: "recurrence_day",
+  dia_recorrência: "recurrence_day",
+  dia: "recurrence_day",
   mes_recorrencia: "recurrence_month",
+  mes_recorrência: "recurrence_month",
+  mês_recorrência: "recurrence_month",
+  mes: "recurrence_month",
+  mês: "recurrence_month",
+  // EN
+  name: "name",
+  amount: "amount",
+  category: "category",
+  type: "type",
+  priority: "priority",
+  urgency: "urgency",
+  due_date: "due_date",
+  description: "description",
+  notes: "notes",
+  recurrence_frequency: "recurrence_frequency",
+  frequency: "recurrence_frequency",
+  recurrence_day: "recurrence_day",
+  day: "recurrence_day",
   recurrence_month: "recurrence_month",
+  month: "recurrence_month",
 };
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -141,8 +172,19 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
 
   const rawFreq = String(n.recurrence_frequency ?? "").toLowerCase().trim();
   const frequency = isRecurring
-    ? FREQUENCY_MAP[rawFreq] ?? "monthly"
+    ? (FREQUENCY_MAP[rawFreq] ?? "monthly") as ExpenseFormData["recurrence_frequency"]
     : undefined;
+
+  let recurrenceDay: number | undefined;
+  let recurrenceMonth: number | undefined;
+
+  if (isRecurring && n.recurrence_day) {
+    recurrenceDay = Number(n.recurrence_day);
+  }
+
+  if (isRecurring && frequency === "yearly" && n.recurrence_month) {
+    recurrenceMonth = Number(n.recurrence_month);
+  }
 
   return {
     name: String(n.name ?? "").trim(),
@@ -155,9 +197,9 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
     description: String(n.description ?? "").trim() || undefined,
     notes: String(n.notes ?? "").trim() || undefined,
     is_recurring: isRecurring,
-    recurrence_frequency: frequency as ExpenseFormData["recurrence_frequency"],
-    recurrence_day: n.recurrence_day ? Number(n.recurrence_day) : undefined,
-    recurrence_month: n.recurrence_month ? Number(n.recurrence_month) : undefined,
+    recurrence_frequency: frequency,
+    recurrence_day: recurrenceDay,
+    recurrence_month: recurrenceMonth,
   };
 }
 
