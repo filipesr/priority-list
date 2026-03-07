@@ -12,7 +12,7 @@ export default async function BudgetPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Orçamento</h1>
+        <h1 className="text-xl font-semibold">Orçamento</h1>
         <p className="text-muted-foreground">
           Defina e acompanhe seu orçamento mensal
         </p>

@@ -5,6 +5,7 @@ export type {
   ExpenseStatus,
   PriorityLevel,
   UrgencyLevel,
+  RecurrenceFrequency,
   Profile,
   Budget,
 } from "./database.types";

@@ -1,5 +1,4 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import { UserNav } from "./user-nav";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,9 +15,8 @@ export async function Header() {
     .single();
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background px-4">
+    <header className="flex h-14 items-center gap-4 px-4">
       <SidebarTrigger />
-      <Separator orientation="vertical" className="h-6" />
       <div className="flex-1" />
       <UserNav
         user={{

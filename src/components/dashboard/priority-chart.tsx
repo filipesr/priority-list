@@ -19,10 +19,10 @@ import { PRIORITY_LABELS } from "@/lib/constants";
 import type { Expense, PriorityLevel } from "@/lib/types";
 
 const CHART_COLORS: Record<PriorityLevel, string> = {
-  critical: "#dc2626",
-  high: "#f97316",
-  medium: "#eab308",
-  low: "#22c55e",
+  critical: "#f87171",
+  high: "#fb923c",
+  medium: "#fbbf24",
+  low: "#34d399",
 };
 
 export function PriorityChart({ expenses }: { expenses: Expense[] }) {
@@ -62,9 +62,9 @@ export function PriorityChart({ expenses }: { expenses: Expense[] }) {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
-            <XAxis dataKey="name" />
-            <YAxis allowDecimals={false} />
-            <Tooltip />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
+            <Tooltip contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }} />
             <Bar dataKey="count" name="Quantidade" radius={[4, 4, 0, 0]}>
               {data.map((entry) => (
                 <Cell

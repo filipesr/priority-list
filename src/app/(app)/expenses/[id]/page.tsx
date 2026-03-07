@@ -17,7 +17,7 @@ export default async function EditExpensePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Editar Despesa</h1>
+        <h1 className="text-xl font-semibold">Editar Despesa</h1>
         <p className="text-muted-foreground">
           Atualize os dados da despesa
         </p>

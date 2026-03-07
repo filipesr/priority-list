@@ -46,9 +46,14 @@ export function CategoryChart({ data }: { data: CategoryBreakdown[] }) {
               outerRadius={100}
               dataKey="total"
               nameKey="label"
-              label={(props: PieLabelRenderProps) =>
-                `${props.name ?? ""} (${((props.percent ?? 0) * 100).toFixed(0)}%)`
-              }
+              label={(props: PieLabelRenderProps) => {
+                const { x, y, name, percent } = props;
+                return (
+                  <text x={x as number} y={y as number} fill="oklch(0.75 0.02 270)" textAnchor={(x as number) > 200 ? "start" : "end"} dominantBaseline="central" fontSize={12}>
+                    {`${name ?? ""} (${((percent ?? 0) * 100).toFixed(0)}%)`}
+                  </text>
+                );
+              }}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -56,6 +61,7 @@ export function CategoryChart({ data }: { data: CategoryBreakdown[] }) {
             </Pie>
             <Tooltip
               formatter={(value) => formatCurrency(Number(value))}
+              contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }}
             />
           </PieChart>
         </ResponsiveContainer>

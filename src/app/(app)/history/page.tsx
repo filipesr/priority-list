@@ -19,7 +19,7 @@ export default async function HistoryPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Histórico</h1>
+        <h1 className="text-xl font-semibold">Histórico</h1>
         <p className="text-muted-foreground">
           Despesas concluídas e pagamentos realizados
         </p>

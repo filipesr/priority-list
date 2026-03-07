@@ -27,7 +27,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CATEGORIES, TYPES, PRIORITIES, URGENCIES } from "@/lib/constants";
+import {
+  CATEGORIES,
+  TYPES,
+  PRIORITIES,
+  URGENCIES,
+  RECURRENCE_FREQUENCIES,
+  WEEKDAYS,
+  MONTHS,
+} from "@/lib/constants";
 import { Loader2 } from "lucide-react";
 import type { Expense } from "@/lib/types";
 
@@ -54,11 +62,43 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
       due_date: expense?.due_date ?? "",
       notes: expense?.notes ?? "",
       is_recurring: expense?.is_recurring ?? false,
+      recurrence_frequency: expense?.recurrence_frequency ?? undefined,
       recurrence_day: expense?.recurrence_day ?? undefined,
+      recurrence_month: expense?.recurrence_month ?? undefined,
     },
   });
 
+  const watchType = form.watch("type");
+  const isRecurring = watchType === "recorrente";
+  const watchFrequency = form.watch("recurrence_frequency");
+
+  function handleTypeChange(value: string, onChange: (value: string) => void) {
+    onChange(value);
+    if (value === "recorrente") {
+      form.setValue("is_recurring", true);
+      form.setValue("due_date", "");
+      if (!form.getValues("recurrence_frequency")) {
+        form.setValue("recurrence_frequency", "monthly");
+      }
+    } else {
+      form.setValue("is_recurring", false);
+      form.setValue("recurrence_frequency", undefined);
+      form.setValue("recurrence_day", undefined);
+      form.setValue("recurrence_month", undefined);
+    }
+  }
+
   async function onSubmit(data: ExpenseFormData) {
+    if (data.type === "recorrente") {
+      data.is_recurring = true;
+      data.due_date = "";
+    } else {
+      data.is_recurring = false;
+      data.recurrence_frequency = undefined;
+      data.recurrence_day = undefined;
+      data.recurrence_month = undefined;
+    }
+
     const result = isEditing
       ? await updateExpense(expense.id, data)
       : await createExpense(data);
@@ -123,7 +163,7 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
                 <FormLabel>Categoria</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -150,8 +190,8 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
               <FormItem>
                 <FormLabel>Tipo</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  onValueChange={(value) => value && handleTypeChange(value, field.onChange)}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -172,6 +212,167 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
           />
         </div>
 
+        {isRecurring && (
+          <div className="space-y-4 rounded-lg border border-border/50 p-4">
+            <FormField
+              control={form.control}
+              name="recurrence_frequency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Frequência</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value ?? "monthly"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {RECURRENCE_FREQUENCIES.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>
+                          {f.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {watchFrequency === "weekly" && (
+              <FormField
+                control={form.control}
+                name="recurrence_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dia da Semana</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      value={field.value !== undefined ? String(field.value) : ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o dia" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {WEEKDAYS.map((d) => (
+                          <SelectItem key={d.value} value={String(d.value)}>
+                            {d.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {watchFrequency === "monthly" && (
+              <FormField
+                control={form.control}
+                name="recurrence_day"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dia do Mês</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        placeholder="Ex: 10"
+                        className="w-32"
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || undefined)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {watchFrequency === "yearly" && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="recurrence_month"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mês</FormLabel>
+                      <Select
+                        onValueChange={(v) => field.onChange(Number(v))}
+                        value={field.value !== undefined ? String(field.value) : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MONTHS.map((m) => (
+                            <SelectItem key={m.value} value={String(m.value)}>
+                              {m.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="recurrence_day"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dia</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          placeholder="Ex: 15"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || undefined)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isRecurring && (
+          <FormField
+            control={form.control}
+            name="due_date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Vencimento</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -181,7 +382,7 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
                 <FormLabel>Prioridade</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -209,7 +410,7 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
                 <FormLabel>Urgência</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -229,20 +430,6 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="due_date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Data de Vencimento</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -275,51 +462,6 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
             </FormItem>
           )}
         />
-
-        <div className="flex items-center gap-4">
-          <FormField
-            control={form.control}
-            name="is_recurring"
-            render={({ field }) => (
-              <FormItem className="flex items-center gap-2">
-                <FormControl>
-                  <input
-                    type="checkbox"
-                    checked={field.value}
-                    onChange={field.onChange}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </FormControl>
-                <FormLabel className="!mt-0">Despesa Recorrente</FormLabel>
-              </FormItem>
-            )}
-          />
-
-          {form.watch("is_recurring") && (
-            <FormField
-              control={form.control}
-              name="recurrence_day"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dia do Mês</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={31}
-                      className="w-20"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(parseInt(e.target.value) || undefined)
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
 
         <div className="flex gap-4">
           <Button

@@ -27,15 +27,15 @@ export function MonthlyTrend({ data }: { data: MonthlySpending[] }) {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis tickFormatter={(v) => `R$${v}`} />
-            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
+            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
+            <YAxis tickFormatter={(v) => `R$${v}`} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }} />
             <Line
               type="monotone"
               dataKey="total"
               name="Total"
-              stroke="#3b82f6"
+              stroke="oklch(0.65 0.20 270)"
               strokeWidth={2}
               dot={{ r: 4 }}
             />

@@ -50,11 +50,11 @@ export function BudgetSummaryCard({
           value={summary.totalSpent + summary.totalCommitted}
           limit={limit}
         />
-        <div className="flex items-center justify-between rounded-lg bg-muted p-4">
+        <div className="flex items-center justify-between rounded-lg bg-accent/50 p-4">
           <span className="font-medium">Disponível</span>
           <span
             className={`text-xl font-bold ${
-              remaining < 0 ? "text-destructive" : "text-green-600"
+              remaining < 0 ? "text-destructive" : "text-emerald-400"
             }`}
           >
             {formatCurrency(remaining)}

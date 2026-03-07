@@ -44,7 +44,7 @@ export function ExpenseList({ expenses }: { expenses: Expense[] }) {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border border-border/50">
       <Table>
         <TableHeader>
           <TableRow>

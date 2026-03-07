@@ -32,9 +32,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="border-b px-6 py-4">
+      <SidebarHeader className="px-6 py-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <Wallet className="h-6 w-6" />
+          <Wallet className="h-6 w-6 text-primary" />
           <span className="text-lg font-bold">Priority List</span>
         </Link>
       </SidebarHeader>

@@ -31,7 +31,9 @@ export async function createExpense(
       description: parsed.data.description || null,
       custom_category: parsed.data.custom_category || null,
       notes: parsed.data.notes || null,
-      recurrence_day: parsed.data.recurrence_day || null,
+      recurrence_frequency: parsed.data.recurrence_frequency || null,
+      recurrence_day: parsed.data.recurrence_day ?? null,
+      recurrence_month: parsed.data.recurrence_month ?? null,
     })
     .select()
     .single();
@@ -71,7 +73,9 @@ export async function updateExpense(
       description: parsed.data.description || null,
       custom_category: parsed.data.custom_category || null,
       notes: parsed.data.notes || null,
-      recurrence_day: parsed.data.recurrence_day || null,
+      recurrence_frequency: parsed.data.recurrence_frequency || null,
+      recurrence_day: parsed.data.recurrence_day ?? null,
+      recurrence_month: parsed.data.recurrence_month ?? null,
     })
     .eq("id", id)
     .eq("user_id", user.id)

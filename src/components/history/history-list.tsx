@@ -34,7 +34,7 @@ export function HistoryList({ expenses }: { expenses: Expense[] }) {
         </p>
         <p className="font-semibold">Total: {formatCurrency(total)}</p>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border border-border/50">
         <Table>
           <TableHeader>
             <TableRow>

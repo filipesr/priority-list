@@ -9,6 +9,8 @@ export type ExpenseCategory =
 
 export type ExpenseType = "recorrente" | "esporadico" | "imprevisto";
 
+export type RecurrenceFrequency = "weekly" | "monthly" | "yearly";
+
 export type PriorityLevel = "critical" | "high" | "medium" | "low";
 
 export type UrgencyLevel = "urgent" | "can_wait" | "flexible";
@@ -39,7 +41,9 @@ export interface Expense {
   due_date: string | null;
   notes: string | null;
   is_recurring: boolean;
+  recurrence_frequency: RecurrenceFrequency | null;
   recurrence_day: number | null;
+  recurrence_month: number | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
