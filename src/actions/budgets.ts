@@ -23,11 +23,10 @@ export async function upsertBudget(
     return { success: false, error: "Limite deve ser maior que zero" };
   }
 
-  // Check if budget exists
+  // Check if budget exists for this month/year (shared)
   const { data: existing } = await supabase
     .from("budgets")
     .select("id")
-    .eq("user_id", user.id)
     .eq("month", month)
     .eq("year", year)
     .single();
@@ -80,7 +79,6 @@ export async function getBudget(
   const { data } = await supabase
     .from("budgets")
     .select("*")
-    .eq("user_id", user.id)
     .eq("month", month)
     .eq("year", year)
     .single();
@@ -116,26 +114,22 @@ export async function getBudgetSummary(
       supabase
         .from("budgets")
         .select("*")
-        .eq("user_id", user.id)
         .eq("month", month)
         .eq("year", year)
         .single(),
       supabase
         .from("expenses")
         .select("amount")
-        .eq("user_id", user.id)
         .eq("status", "completed")
         .gte("completed_at", startOfMonth)
         .lte("completed_at", `${endOfMonth}T23:59:59`),
       supabase
         .from("expenses")
         .select("amount")
-        .eq("user_id", user.id)
         .eq("status", "in_progress"),
       supabase
         .from("expenses")
         .select("amount")
-        .eq("user_id", user.id)
         .eq("status", "pending"),
     ]);
 

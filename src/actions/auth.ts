@@ -26,6 +26,7 @@ export async function signIn(
     return { success: false, error: "Email ou senha inválidos" };
   }
 
+  // Middleware handles approval redirect
   redirect("/dashboard");
 }
 
@@ -60,7 +61,7 @@ export async function signUp(
     return { success: false, error: error.message };
   }
 
-  redirect("/dashboard");
+  redirect("/pending-approval");
 }
 
 export async function signInWithGoogle(): Promise<ActionResult> {
@@ -79,6 +80,32 @@ export async function signInWithGoogle(): Promise<ActionResult> {
   }
 
   redirect(data.url);
+}
+
+export async function verifyPassword(password: string): Promise<ActionResult> {
+  if (!password) {
+    return { success: false, error: "Senha é obrigatória" };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password,
+  });
+
+  if (error) {
+    return { success: false, error: "Senha incorreta" };
+  }
+
+  return { success: true };
 }
 
 export async function signOut(): Promise<void> {

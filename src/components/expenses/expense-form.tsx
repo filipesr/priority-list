@@ -32,12 +32,15 @@ import {
   TYPES,
   PRIORITIES,
   URGENCIES,
+  COST_CENTERS,
   RECURRENCE_FREQUENCIES,
   WEEKDAYS,
   MONTHS,
+  CURRENCIES,
+  CURRENCY_SYMBOLS,
 } from "@/lib/constants";
 import { Loader2 } from "lucide-react";
-import type { Expense } from "@/lib/types";
+import type { Expense, SupportedCurrency } from "@/lib/types";
 
 interface ExpenseFormProps {
   expense?: Expense;
@@ -54,11 +57,13 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
       name: expense?.name ?? "",
       description: expense?.description ?? "",
       amount: expense?.amount ?? 0,
+      currency: expense?.currency ?? "BRL",
       category: expense?.category ?? "outro",
       custom_category: expense?.custom_category ?? "",
       type: expense?.type ?? "esporadico",
       priority: expense?.priority ?? "medium",
       urgency: expense?.urgency ?? "can_wait",
+      cost_center: expense?.cost_center ?? "outros",
       due_date: expense?.due_date ?? "",
       notes: expense?.notes ?? "",
       is_recurring: expense?.is_recurring ?? false,
@@ -68,6 +73,7 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
     },
   });
 
+  const watchCurrency = form.watch("currency") as SupportedCurrency;
   const watchType = form.watch("type");
   const isRecurring = watchType === "recorrente";
   const watchFrequency = form.watch("recurrence_frequency");
@@ -133,26 +139,53 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Valor (R$)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0,00"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Valor ({CURRENCY_SYMBOLS[watchCurrency]})</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="currency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Moeda</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Moeda" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -211,6 +244,34 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="cost_center"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Centro de Custo</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value ?? "outros"}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {COST_CENTERS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {isRecurring && (
           <div className="space-y-4 rounded-lg border border-border/50 p-4">

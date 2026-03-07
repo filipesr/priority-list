@@ -21,9 +21,20 @@ export async function importExpenses(
     return { success: false, error: "Nenhuma despesa para importar" };
   }
 
+  // Fetch profile for author name
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
+  const createdByName = profile?.full_name ?? "Desconhecido";
+
   const rows = expenses.map((e) => ({
     ...e,
     user_id: user.id,
+    cost_center: e.cost_center ?? "outros",
+    created_by_name: createdByName,
     due_date: e.due_date || null,
     description: e.description || null,
     custom_category: e.custom_category || null,

@@ -11,46 +11,49 @@ import {
   CheckCircle2,
   Wallet,
 } from "lucide-react";
+import { SensitiveValue } from "@/components/layout/sensitive-value";
 import type { DashboardStats } from "@/actions/dashboard";
 
 export function StatsCards({ stats }: { stats: DashboardStats }) {
-  const balance =
-    stats.budgetLimit !== null
-      ? stats.budgetLimit - stats.totalCompletedMonth - stats.totalInProgress
-      : null;
+  const c = stats.preferredCurrency;
+  const balance = stats.totalIncomeMonth - stats.totalCompletedMonth - stats.totalInProgress;
 
   const cards = [
     {
       title: "Total Pendente",
-      value: formatCurrency(stats.totalPending),
+      value: formatCurrency(stats.totalPending, c),
       icon: Clock,
       description: "Aguardando pagamento",
       borderColor: "border-l-amber-400",
       iconColor: "text-amber-400",
+      sensitive: false,
     },
     {
       title: "Comprometido",
-      value: formatCurrency(stats.totalInProgress),
+      value: formatCurrency(stats.totalInProgress, c),
       icon: TrendingUp,
       description: "Em andamento",
       borderColor: "border-l-blue-400",
       iconColor: "text-blue-400",
+      sensitive: false,
     },
     {
       title: "Pago no Mês",
-      value: formatCurrency(stats.totalCompletedMonth),
+      value: formatCurrency(stats.totalCompletedMonth, c),
       icon: CheckCircle2,
       description: "Concluído este mês",
       borderColor: "border-l-emerald-400",
       iconColor: "text-emerald-400",
+      sensitive: false,
     },
     {
       title: "Saldo Disponível",
-      value: balance !== null ? formatCurrency(balance) : "—",
+      value: formatCurrency(balance, c),
       icon: Wallet,
-      description: balance !== null ? "Restante do orçamento" : "Defina um orçamento",
+      description: "Receita - gastos",
       borderColor: "border-l-violet-400",
       iconColor: "text-violet-400",
+      sensitive: true,
     },
   ];
 
@@ -65,7 +68,13 @@ export function StatsCards({ stats }: { stats: DashboardStats }) {
             <card.icon className={`h-4 w-4 ${card.iconColor}`} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
+            <div className="text-2xl font-bold">
+              {card.sensitive ? (
+                <SensitiveValue>{card.value}</SensitiveValue>
+              ) : (
+                card.value
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               {card.description}
             </p>

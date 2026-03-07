@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
-import { CATEGORIES } from "@/lib/constants";
+import { CATEGORIES, COST_CENTERS } from "@/lib/constants";
 
 export function HistoryFilters() {
   const router = useRouter();
@@ -38,6 +38,7 @@ export function HistoryFilters() {
 
   const hasFilters =
     searchParams.has("category") ||
+    searchParams.has("cost_center") ||
     searchParams.has("startDate") ||
     searchParams.has("endDate");
 
@@ -55,6 +56,25 @@ export function HistoryFilters() {
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
             {CATEGORIES.map((c) => (
+              <SelectItem key={c.value} value={c.value}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Centro de Custo</Label>
+        <Select
+          defaultValue={searchParams.get("cost_center") ?? "all"}
+          onValueChange={(v) => updateFilter("cost_center", v)}
+        >
+          <SelectTrigger className="w-[150px] h-9">
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {COST_CENTERS.map((c) => (
               <SelectItem key={c.value} value={c.value}>
                 {c.label}
               </SelectItem>

@@ -5,8 +5,11 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Receipt,
-  Wallet,
+  TrendingUp,
   History,
+  Users,
+  ArrowLeftRight,
+  ClipboardList,
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,16 +22,32 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { CurrencySelector } from "./currency-selector";
+import { Wallet } from "lucide-react";
+import type { SupportedCurrency } from "@/lib/types";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Despesas", href: "/expenses", icon: Receipt },
-  { title: "Orçamento", href: "/budget", icon: Wallet },
+  { title: "Receitas", href: "/income", icon: TrendingUp },
+  { title: "Pendências", href: "/pendencias", icon: ClipboardList },
+  { title: "Câmbio", href: "/exchange-rates", icon: ArrowLeftRight },
   { title: "Histórico", href: "/history", icon: History },
 ];
 
-export function AppSidebar() {
+const adminItems = [
+  { title: "Usuários", href: "/admin", icon: Users },
+];
+
+interface AppSidebarProps {
+  isAdmin?: boolean;
+  preferredCurrency?: SupportedCurrency;
+}
+
+export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarProps) {
   const pathname = usePathname();
+
+  const items = isAdmin ? [...navItems, ...adminItems] : navItems;
 
   return (
     <Sidebar>
@@ -43,7 +62,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
@@ -55,6 +74,15 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Moeda</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <div className="px-2">
+              <CurrencySelector current={preferredCurrency} />
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

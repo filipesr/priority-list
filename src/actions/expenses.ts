@@ -22,11 +22,21 @@ export async function createExpense(
     return { success: false, error: "Não autenticado" };
   }
 
+  // Fetch profile for author name
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
   const { data: expense, error } = await supabase
     .from("expenses")
     .insert({
       ...parsed.data,
       user_id: user.id,
+      cost_center: parsed.data.cost_center ?? "outros",
+      currency: parsed.data.currency ?? "BRL",
+      created_by_name: profile?.full_name ?? "Desconhecido",
       due_date: parsed.data.due_date || null,
       description: parsed.data.description || null,
       custom_category: parsed.data.custom_category || null,
@@ -39,7 +49,8 @@ export async function createExpense(
     .single();
 
   if (error) {
-    return { success: false, error: "Erro ao criar despesa" };
+    console.error("createExpense error:", error.message, error.code);
+    return { success: false, error: `Erro ao criar despesa: ${error.message}` };
   }
 
   revalidatePath("/expenses");
@@ -69,6 +80,8 @@ export async function updateExpense(
     .from("expenses")
     .update({
       ...parsed.data,
+      cost_center: parsed.data.cost_center ?? "outros",
+      currency: parsed.data.currency ?? "BRL",
       due_date: parsed.data.due_date || null,
       description: parsed.data.description || null,
       custom_category: parsed.data.custom_category || null,
@@ -78,12 +91,12 @@ export async function updateExpense(
       recurrence_month: parsed.data.recurrence_month ?? null,
     })
     .eq("id", id)
-    .eq("user_id", user.id)
     .select()
     .single();
 
   if (error) {
-    return { success: false, error: "Erro ao atualizar despesa" };
+    console.error("updateExpense error:", error.message, error.code);
+    return { success: false, error: `Erro ao atualizar despesa: ${error.message}` };
   }
 
   revalidatePath("/expenses");
@@ -104,11 +117,11 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   const { error } = await supabase
     .from("expenses")
     .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
 
   if (error) {
-    return { success: false, error: "Erro ao excluir despesa" };
+    console.error("deleteExpense error:", error.message, error.code);
+    return { success: false, error: `Erro ao excluir despesa: ${error.message}` };
   }
 
   revalidatePath("/expenses");
@@ -139,11 +152,11 @@ export async function updateExpenseStatus(
   const { error } = await supabase
     .from("expenses")
     .update(updateData)
-    .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("id", id);
 
   if (error) {
-    return { success: false, error: "Erro ao atualizar status" };
+    console.error("updateExpenseStatus error:", error.message, error.code);
+    return { success: false, error: `Erro ao atualizar status: ${error.message}` };
   }
 
   revalidatePath("/expenses");
@@ -167,7 +180,6 @@ export async function getExpenses(
   let query = supabase
     .from("expenses")
     .select("*")
-    .eq("user_id", user.id)
     .neq("status", "completed")
     .order("created_at", { ascending: false });
 
@@ -183,6 +195,9 @@ export async function getExpenses(
   if (filters?.type) {
     query = query.eq("type", filters.type);
   }
+  if (filters?.cost_center) {
+    query = query.eq("cost_center", filters.cost_center);
+  }
   if (filters?.search) {
     query = query.ilike("name", `%${filters.search}%`);
   }
@@ -190,7 +205,8 @@ export async function getExpenses(
   const { data, error } = await query;
 
   if (error) {
-    return { success: false, error: "Erro ao buscar despesas" };
+    console.error("getExpenses error:", error.message, error.code);
+    return { success: false, error: `Erro ao buscar despesas: ${error.message}` };
   }
 
   return { success: true, data: data ?? [] };
@@ -212,7 +228,6 @@ export async function getExpense(
     .from("expenses")
     .select("*")
     .eq("id", id)
-    .eq("user_id", user.id)
     .single();
 
   if (error) {

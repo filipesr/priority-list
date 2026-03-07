@@ -5,6 +5,11 @@ import type {
   UrgencyLevel,
   ExpenseStatus,
   RecurrenceFrequency,
+  CostCenter,
+  SupportedCurrency,
+  IncomeType,
+  PendenciaStatus,
+  PaymentMode,
 } from "@/lib/types";
 
 export const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
@@ -109,6 +114,70 @@ export const MONTH_LABELS: Record<number, string> = {
   12: "Dezembro",
 };
 
+export const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
+  BRL: "Real",
+  USD: "Dólar",
+  PYG: "Guarani",
+};
+
+export const CURRENCY_SYMBOLS: Record<SupportedCurrency, string> = {
+  BRL: "R$",
+  USD: "US$",
+  PYG: "₲",
+};
+
+export const CURRENCY_LOCALES: Record<SupportedCurrency, string> = {
+  BRL: "pt-BR",
+  USD: "en-US",
+  PYG: "es-PY",
+};
+
+export const CURRENCY_DECIMALS: Record<SupportedCurrency, number> = {
+  BRL: 2,
+  USD: 2,
+  PYG: 0,
+};
+
+export const SUPPORTED_CURRENCIES: SupportedCurrency[] = ["BRL", "USD", "PYG"];
+
+export const CURRENCIES = SUPPORTED_CURRENCIES.map((c) => ({
+  value: c,
+  label: `${CURRENCY_SYMBOLS[c]} ${CURRENCY_LABELS[c]}`,
+}));
+
+export const INCOME_TYPE_LABELS: Record<IncomeType, string> = {
+  fixed: "Fixo",
+  variable: "Variável",
+};
+
+export const INCOME_TYPES = Object.entries(INCOME_TYPE_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const COST_CENTER_LABELS: Record<CostCenter, string> = {
+  casa: "Casa",
+  carro: "Carro",
+  filipe: "Filipe",
+  mayara: "Mayara",
+  samuel: "Samuel",
+  ana: "Ana",
+  outros: "Outros",
+};
+
+export const COST_CENTER_COLORS: Record<CostCenter, string> = {
+  casa: "#818cf8",
+  carro: "#f59e0b",
+  filipe: "#3b82f6",
+  mayara: "#ec4899",
+  samuel: "#10b981",
+  ana: "#a855f7",
+  outros: "#94a3b8",
+};
+
+export const COST_CENTERS = Object.entries(COST_CENTER_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
 export const RECURRENCE_FREQUENCIES = Object.entries(RECURRENCE_FREQUENCY_LABELS).map(
   ([value, label]) => ({ value, label })
 );
@@ -139,5 +208,28 @@ export const URGENCIES = Object.entries(URGENCY_LABELS).map(
 );
 
 export const STATUSES = Object.entries(STATUS_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const PENDENCIA_STATUS_LABELS: Record<PendenciaStatus, string> = {
+  pending: "Pendente",
+  resolved: "Resolvida",
+};
+
+export const PENDENCIA_STATUS_COLORS: Record<PendenciaStatus, string> = {
+  pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
+  resolved: "bg-green-500/15 text-green-400 border-green-500/25",
+};
+
+export const PENDENCIA_STATUSES = Object.entries(PENDENCIA_STATUS_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
+  single: "À Vista",
+  installments: "Parcelado",
+};
+
+export const PAYMENT_MODES = Object.entries(PAYMENT_MODE_LABELS).map(
   ([value, label]) => ({ value, label })
 );

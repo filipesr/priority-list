@@ -1,30 +1,35 @@
 import {
   getDashboardStats,
   getCategoryBreakdown,
+  getCostCenterBreakdown,
   getMonthlySpending,
   getPriorityListExpenses,
 } from "@/actions/dashboard";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { CategoryChart } from "@/components/dashboard/category-chart";
+import { CostCenterChart } from "@/components/dashboard/cost-center-chart";
 import { PriorityChart } from "@/components/dashboard/priority-chart";
 import { MonthlyTrend } from "@/components/dashboard/monthly-trend";
 import { PriorityListWidget } from "@/components/dashboard/priority-list";
 
 export default async function DashboardPage() {
-  const [statsResult, categoryResult, monthlyResult, expensesResult] =
+  const [statsResult, categoryResult, costCenterResult, monthlyResult, expensesResult] =
     await Promise.all([
       getDashboardStats(),
       getCategoryBreakdown(),
+      getCostCenterBreakdown(),
       getMonthlySpending(),
       getPriorityListExpenses(),
     ]);
+
+  const currency = statsResult.data?.preferredCurrency ?? "BRL";
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Visão geral do seu orçamento e prioridades
+          Visão geral das suas finanças e prioridades
         </p>
       </div>
 
@@ -34,7 +39,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {categoryResult.success && (
-          <CategoryChart data={categoryResult.data ?? []} />
+          <CategoryChart data={categoryResult.data ?? []} currency={currency} />
         )}
         {expensesResult.success && (
           <PriorityChart expenses={expensesResult.data ?? []} />
@@ -42,7 +47,11 @@ export default async function DashboardPage() {
       </div>
 
       {monthlyResult.success && (
-        <MonthlyTrend data={monthlyResult.data ?? []} />
+        <MonthlyTrend data={monthlyResult.data ?? []} currency={currency} />
+      )}
+
+      {costCenterResult.success && (
+        <CostCenterChart data={costCenterResult.data ?? []} currency={currency} />
       )}
 
       {expensesResult.success && (

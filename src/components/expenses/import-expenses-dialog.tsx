@@ -126,7 +126,7 @@ export function ImportExpensesDialog() {
             <div className="rounded-lg bg-accent/50 p-4 space-y-3">
               <p className="font-medium text-foreground">Cabeçalho com todas as colunas:</p>
               <pre className="overflow-x-auto text-[11px] leading-relaxed">
-{`nome;valor;categoria;tipo;prioridade;urgencia;vencimento;descricao;notas;frequencia;dia_recorrencia;mes_recorrencia`}
+{`nome;valor;categoria;tipo;prioridade;urgencia;centro_custo;vencimento;descricao;notas;frequencia;dia_recorrencia;mes_recorrencia`}
               </pre>
 
               <p className="font-medium text-foreground mt-3">Exemplos por tipo:</p>
@@ -141,23 +141,23 @@ export function ImportExpensesDialog() {
                   <tbody className="font-mono">
                     <tr className="border-b border-border/20">
                       <td className="py-1.5 pr-2 font-sans text-muted-foreground">Recorrente mensal</td>
-                      <td className="py-1.5"><code>Aluguel;2500;casa;recorrente;critical;urgent;;Aluguel apartamento;Contrato até 2027;mensal;5;</code></td>
+                      <td className="py-1.5"><code>Aluguel;2500;casa;recorrente;critical;urgent;casa;;Aluguel apartamento;Contrato até 2027;mensal;5;</code></td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-1.5 pr-2 font-sans text-muted-foreground">Recorrente semanal</td>
-                      <td className="py-1.5"><code>Feira;200;casa;recorrente;medium;can_wait;;Feira da semana;Supermercado;semanal;6;</code></td>
+                      <td className="py-1.5"><code>Feira;200;casa;recorrente;medium;can_wait;casa;;Feira da semana;Supermercado;semanal;6;</code></td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-1.5 pr-2 font-sans text-muted-foreground">Recorrente anual</td>
-                      <td className="py-1.5"><code>IPVA;1800;pessoais;recorrente;high;urgent;;IPVA do carro;Placa ABC-1234;anual;15;1</code></td>
+                      <td className="py-1.5"><code>IPVA;1800;pessoais;recorrente;high;urgent;carro;;IPVA do carro;Placa ABC-1234;anual;15;1</code></td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-1.5 pr-2 font-sans text-muted-foreground">Esporádico</td>
-                      <td className="py-1.5"><code>Dentista;800;saude;esporadico;high;can_wait;2026-04-15;Tratamento canal;Dr. Silva;;;</code></td>
+                      <td className="py-1.5"><code>Dentista;800;saude;esporadico;high;can_wait;filipe;2026-04-15;Tratamento canal;Dr. Silva;;;</code></td>
                     </tr>
                     <tr>
                       <td className="py-1.5 pr-2 font-sans text-muted-foreground">Imprevisto</td>
-                      <td className="py-1.5"><code>Conserto carro;1200;emergenciais;imprevisto;critical;urgent;2026-03-20;Motor com defeito;Oficina centro;;;</code></td>
+                      <td className="py-1.5"><code>Conserto carro;1200;emergenciais;imprevisto;critical;urgent;carro;2026-03-20;Motor com defeito;Oficina centro;;;</code></td>
                     </tr>
                   </tbody>
                 </table>
@@ -171,6 +171,10 @@ export function ImportExpensesDialog() {
                 <div>
                   <p className="font-medium text-foreground mb-1">Valores de frequência</p>
                   <p><code className="rounded bg-background/50 px-1">semanal</code> <code className="rounded bg-background/50 px-1">mensal</code> <code className="rounded bg-background/50 px-1">anual</code></p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">Centro de custo</p>
+                  <p><code className="rounded bg-background/50 px-1">casa</code> <code className="rounded bg-background/50 px-1">carro</code> <code className="rounded bg-background/50 px-1">filipe</code> <code className="rounded bg-background/50 px-1">mayara</code> <code className="rounded bg-background/50 px-1">samuel</code> <code className="rounded bg-background/50 px-1">ana</code> <code className="rounded bg-background/50 px-1">outros</code></p>
                 </div>
                 <div>
                   <p className="font-medium text-foreground mb-1">dia_recorrencia</p>

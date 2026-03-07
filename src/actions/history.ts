@@ -5,6 +5,7 @@ import type { ActionResult, Expense } from "@/lib/types";
 
 export async function getHistory(filters?: {
   category?: string;
+  cost_center?: string;
   startDate?: string;
   endDate?: string;
 }): Promise<ActionResult<Expense[]>> {
@@ -20,12 +21,14 @@ export async function getHistory(filters?: {
   let query = supabase
     .from("expenses")
     .select("*")
-    .eq("user_id", user.id)
     .eq("status", "completed")
     .order("completed_at", { ascending: false });
 
   if (filters?.category) {
     query = query.eq("category", filters.category);
+  }
+  if (filters?.cost_center) {
+    query = query.eq("cost_center", filters.cost_center);
   }
   if (filters?.startDate) {
     query = query.gte("completed_at", filters.startDate);
@@ -37,7 +40,8 @@ export async function getHistory(filters?: {
   const { data, error } = await query;
 
   if (error) {
-    return { success: false, error: "Erro ao buscar histórico" };
+    console.error("getHistory error:", error.message, error.code);
+    return { success: false, error: `Erro ao buscar histórico: ${error.message}` };
   }
 
   return { success: true, data: data ?? [] };

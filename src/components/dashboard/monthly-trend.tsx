@@ -16,9 +16,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
+import { CURRENCY_SYMBOLS } from "@/lib/constants";
 import type { MonthlySpending } from "@/actions/dashboard";
+import type { SupportedCurrency } from "@/lib/types";
 
-export function MonthlyTrend({ data }: { data: MonthlySpending[] }) {
+interface MonthlyTrendProps {
+  data: MonthlySpending[];
+  currency?: SupportedCurrency;
+}
+
+export function MonthlyTrend({ data, currency = "BRL" }: MonthlyTrendProps) {
+  const symbol = CURRENCY_SYMBOLS[currency];
+
   return (
     <Card>
       <CardHeader>
@@ -29,8 +38,8 @@ export function MonthlyTrend({ data }: { data: MonthlySpending[] }) {
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
-            <YAxis tickFormatter={(v) => `R$${v}`} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
-            <Tooltip formatter={(value) => formatCurrency(Number(value))} contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }} />
+            <YAxis tickFormatter={(v) => `${symbol}${v}`} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
+            <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }} />
             <Line
               type="monotone"
               dataKey="total"

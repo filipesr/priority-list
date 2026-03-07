@@ -76,6 +76,9 @@ const FIELD_MAP: Record<string, string> = {
   mês_recorrência: "recurrence_month",
   mes: "recurrence_month",
   mês: "recurrence_month",
+  centro_custo: "cost_center",
+  centro_de_custo: "cost_center",
+  moeda: "currency",
   // EN
   name: "name",
   amount: "amount",
@@ -92,6 +95,8 @@ const FIELD_MAP: Record<string, string> = {
   day: "recurrence_day",
   recurrence_month: "recurrence_month",
   month: "recurrence_month",
+  cost_center: "cost_center",
+  currency: "currency",
 };
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -136,6 +141,30 @@ const URGENCY_MAP: Record<string, string> = {
   flexível: "flexible",
 };
 
+const COST_CENTER_MAP: Record<string, string> = {
+  casa: "casa",
+  carro: "carro",
+  filipe: "filipe",
+  mayara: "mayara",
+  samuel: "samuel",
+  ana: "ana",
+  outros: "outros",
+  outro: "outros",
+};
+
+const CURRENCY_MAP: Record<string, string> = {
+  brl: "BRL",
+  real: "BRL",
+  "r$": "BRL",
+  usd: "USD",
+  dolar: "USD",
+  dólar: "USD",
+  "us$": "USD",
+  pyg: "PYG",
+  guarani: "PYG",
+  "₲": "PYG",
+};
+
 const FREQUENCY_MAP: Record<string, string> = {
   weekly: "weekly",
   semanal: "weekly",
@@ -168,6 +197,8 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
   const type = TYPE_MAP[String(n.type ?? "esporadico").toLowerCase().trim()] ?? "esporadico";
   const priority = PRIORITY_MAP[String(n.priority ?? "medium").toLowerCase().trim()] ?? "medium";
   const urgency = URGENCY_MAP[String(n.urgency ?? "can_wait").toLowerCase().trim()] ?? "can_wait";
+  const costCenter = COST_CENTER_MAP[String(n.cost_center ?? "outros").toLowerCase().trim()] ?? "outros";
+  const currency = CURRENCY_MAP[String(n.currency ?? "brl").toLowerCase().trim()] ?? "BRL";
   const isRecurring = type === "recorrente";
 
   const rawFreq = String(n.recurrence_frequency ?? "").toLowerCase().trim();
@@ -189,10 +220,12 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
   return {
     name: String(n.name ?? "").trim(),
     amount: Number(n.amount) || 0,
+    currency: currency as ExpenseFormData["currency"],
     category: category as ExpenseFormData["category"],
     type: type as ExpenseFormData["type"],
     priority: priority as ExpenseFormData["priority"],
     urgency: urgency as ExpenseFormData["urgency"],
+    cost_center: costCenter as ExpenseFormData["cost_center"],
     due_date: isRecurring ? "" : String(n.due_date ?? "").trim(),
     description: String(n.description ?? "").trim() || undefined,
     notes: String(n.notes ?? "").trim() || undefined,

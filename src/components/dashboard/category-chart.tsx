@@ -16,8 +16,14 @@ import {
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import type { CategoryBreakdown } from "@/actions/dashboard";
+import type { SupportedCurrency } from "@/lib/types";
 
-export function CategoryChart({ data }: { data: CategoryBreakdown[] }) {
+interface CategoryChartProps {
+  data: CategoryBreakdown[];
+  currency?: SupportedCurrency;
+}
+
+export function CategoryChart({ data, currency = "BRL" }: CategoryChartProps) {
   if (data.length === 0) {
     return (
       <Card>
@@ -60,7 +66,7 @@ export function CategoryChart({ data }: { data: CategoryBreakdown[] }) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
+              formatter={(value) => formatCurrency(Number(value), currency)}
               contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }}
             />
           </PieChart>
