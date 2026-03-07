@@ -250,8 +250,8 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
                   <FormItem>
                     <FormLabel>Dia da Semana</FormLabel>
                     <Select
-                      onValueChange={(v) => field.onChange(Number(v))}
-                      value={field.value !== undefined ? String(field.value) : ""}
+                      onValueChange={(v) => v !== null && field.onChange(Number(v))}
+                      value={field.value !== undefined ? String(field.value) : null}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -308,8 +308,8 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
                     <FormItem>
                       <FormLabel>Mês</FormLabel>
                       <Select
-                        onValueChange={(v) => field.onChange(Number(v))}
-                        value={field.value !== undefined ? String(field.value) : ""}
+                        onValueChange={(v) => v !== null && field.onChange(Number(v))}
+                        value={field.value !== undefined ? String(field.value) : null}
                       >
                         <FormControl>
                           <SelectTrigger>

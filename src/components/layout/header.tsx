@@ -8,11 +8,26 @@ export async function Header() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from("profiles")
     .select("full_name, avatar_url")
     .eq("id", user?.id ?? "")
     .single();
+
+  if (!profile && user) {
+    const meta = user.user_metadata ?? {};
+    await supabase.from("profiles").insert({
+      id: user.id,
+      full_name: meta.full_name ?? meta.name ?? "",
+      avatar_url: meta.avatar_url ?? "",
+    });
+    const { data: created } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", user.id)
+      .single();
+    profile = created;
+  }
 
   return (
     <header className="flex h-14 items-center gap-4 px-4">
