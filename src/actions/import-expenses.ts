@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/lib/types";
 import type { ExpenseFormData } from "@/lib/validations/expense";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 export async function importExpenses(
   expenses: ExpenseFormData[]
 ): Promise<ActionResult<{ imported: number }>> {
@@ -29,9 +30,15 @@ export async function importExpenses(
 
   const createdByName = profile?.full_name ?? "Desconhecido";
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const rows = expenses.map((e) => ({
     ...e,
     user_id: user.id,
+    orcamento_id: orcamentoId,
     currency: e.currency ?? "BRL",
     cost_center: e.cost_center ?? "outros",
     created_by_name: createdByName,

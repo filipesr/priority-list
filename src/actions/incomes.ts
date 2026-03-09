@@ -6,6 +6,7 @@ import type { ActionResult, Income, SupportedCurrency } from "@/lib/types";
 import { incomeSchema, type IncomeFormData } from "@/lib/validations/income";
 import { getLatestRates } from "@/actions/exchange-rates";
 import { convertAmount } from "@/lib/currency";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 
 export async function createIncome(
   data: IncomeFormData
@@ -24,11 +25,17 @@ export async function createIncome(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data: income, error } = await supabase
     .from("incomes")
     .insert({
       ...parsed.data,
       user_id: user.id,
+      orcamento_id: orcamentoId,
       description: parsed.data.description || null,
       notes: parsed.data.notes || null,
       recurrence_frequency: parsed.data.recurrence_frequency || null,
@@ -116,9 +123,15 @@ export async function getIncomes(): Promise<ActionResult<Income[]>> {
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data, error } = await supabase
     .from("incomes")
     .select("*")
+    .eq("orcamento_id", orcamentoId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -152,9 +165,15 @@ export async function getIncomeSummary(): Promise<ActionResult<IncomeSummary>> {
 
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data: incomes } = await supabase
     .from("incomes")
     .select("*")
+    .eq("orcamento_id", orcamentoId)
     .order("created_at", { ascending: false });
 
   const rates = await getLatestRates();

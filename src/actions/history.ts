@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, Expense } from "@/lib/types";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 
 export async function getHistory(filters?: {
   category?: string;
@@ -18,9 +19,15 @@ export async function getHistory(filters?: {
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   let query = supabase
     .from("expenses")
     .select("*")
+    .eq("orcamento_id", orcamentoId)
     .eq("status", "completed")
     .order("completed_at", { ascending: false });
 

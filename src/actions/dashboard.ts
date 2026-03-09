@@ -5,6 +5,7 @@ import type { ActionResult, Expense, SupportedCurrency } from "@/lib/types";
 import { getLatestRates } from "@/actions/exchange-rates";
 import { convertAmount } from "@/lib/currency";
 import type { RateMap } from "@/lib/currency";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 
 export interface DashboardPeriod {
   month: number;
@@ -90,21 +91,29 @@ export async function getDashboardStats(
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { startOfMonth, endOfMonth } = getPeriodRange(period);
 
   const { data: pending } = await supabase
     .from("expenses")
     .select("amount, currency")
+    .eq("orcamento_id", orcamentoId)
     .eq("status", "pending");
 
   const { data: inProgress } = await supabase
     .from("expenses")
     .select("amount, currency")
+    .eq("orcamento_id", orcamentoId)
     .eq("status", "in_progress");
 
   const { data: completedMonth } = await supabase
     .from("expenses")
     .select("amount, currency")
+    .eq("orcamento_id", orcamentoId)
     .eq("status", "completed")
     .gte("completed_at", startOfMonth)
     .lte("completed_at", `${endOfMonth}T23:59:59`);
@@ -112,12 +121,14 @@ export async function getDashboardStats(
   // Get incomes total
   const { data: incomes } = await supabase
     .from("incomes")
-    .select("amount, currency");
+    .select("amount, currency")
+    .eq("orcamento_id", orcamentoId);
 
   // Get recurring total
   const { data: recurring } = await supabase
     .from("expenses")
     .select("amount, currency")
+    .eq("orcamento_id", orcamentoId)
     .eq("is_recurring", true)
     .neq("status", "completed");
 
@@ -159,9 +170,15 @@ export async function getCategoryBreakdown(
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   let query = supabase
     .from("expenses")
     .select("category, amount, currency")
+    .eq("orcamento_id", orcamentoId)
     .neq("status", "completed");
 
   if (period) {
@@ -235,9 +252,15 @@ export async function getCostCenterBreakdown(
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   let query = supabase
     .from("expenses")
     .select("cost_center, amount, currency")
+    .eq("orcamento_id", orcamentoId)
     .neq("status", "completed");
 
   if (period) {
@@ -305,6 +328,11 @@ export async function getMonthlySpending(
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const months: MonthlySpending[] = [];
   const { month: refMonth, year: refYear } = getPeriodRange(period);
   const refDate = new Date(refYear, refMonth - 1, 1);
@@ -319,6 +347,7 @@ export async function getMonthlySpending(
     const { data: expenses } = await supabase
       .from("expenses")
       .select("amount, currency")
+      .eq("orcamento_id", orcamentoId)
       .eq("status", "completed")
       .gte("completed_at", start)
       .lte("completed_at", `${end}T23:59:59`);
@@ -348,9 +377,15 @@ export async function getPriorityListExpenses(): Promise<
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
+    .eq("orcamento_id", orcamentoId)
     .neq("status", "completed")
     .order("created_at", { ascending: false });
 

@@ -10,6 +10,7 @@ import {
   type ExecutePendenciaFormData,
 } from "@/lib/validations/pendencia";
 import { addMonths } from "date-fns";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 
 export async function createPendencia(
   data: PendenciaFormData
@@ -28,6 +29,11 @@ export async function createPendencia(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name")
@@ -39,6 +45,7 @@ export async function createPendencia(
     .insert({
       ...parsed.data,
       user_id: user.id,
+      orcamento_id: orcamentoId,
       estimated_amount: parsed.data.estimated_amount ?? null,
       description: parsed.data.description || null,
       notes: parsed.data.notes || null,
@@ -131,9 +138,15 @@ export async function getPendencias(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   let query = supabase
     .from("pendencias")
     .select("*")
+    .eq("orcamento_id", orcamentoId)
     .order("created_at", { ascending: false });
 
   if (filters?.status) {
@@ -179,10 +192,16 @@ export async function getPendencia(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data, error } = await supabase
     .from("pendencias")
     .select("*")
     .eq("id", id)
+    .eq("orcamento_id", orcamentoId)
     .single();
 
   if (error) {
@@ -241,6 +260,7 @@ export async function executePendencia(
       .from("expenses")
       .insert({
         user_id: user.id,
+        orcamento_id: pendencia.orcamento_id,
         name: pendencia.name,
         description: pendencia.description,
         amount,
@@ -270,6 +290,7 @@ export async function executePendencia(
       const dueDate = addMonths(baseDate, i);
       return {
         user_id: user.id,
+        orcamento_id: pendencia.orcamento_id,
         name: `${pendencia.name} (${i + 1}/${numInstallments})`,
         description: pendencia.description,
         amount: installmentAmount,

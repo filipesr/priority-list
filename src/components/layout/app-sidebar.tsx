@@ -10,6 +10,7 @@ import {
   Users,
   ArrowLeftRight,
   ClipboardList,
+  FolderOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,6 +24,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { CurrencySelector } from "./currency-selector";
+import { OrcamentoSelector } from "./orcamento-selector";
 import { Wallet } from "lucide-react";
 import type { SupportedCurrency } from "@/lib/types";
 
@@ -31,23 +33,29 @@ const navItems = [
   { title: "Despesas", href: "/expenses", icon: Receipt },
   { title: "Receitas", href: "/income", icon: TrendingUp },
   { title: "Pendências", href: "/pendencias", icon: ClipboardList },
-  { title: "Câmbio", href: "/exchange-rates", icon: ArrowLeftRight },
   { title: "Histórico", href: "/history", icon: History },
 ];
 
 const adminItems = [
+  { title: "Câmbio", href: "/exchange-rates", icon: ArrowLeftRight },
   { title: "Usuários", href: "/admin", icon: Users },
+  { title: "Orçamentos", href: "/admin/orcamentos", icon: FolderOpen },
 ];
 
 interface AppSidebarProps {
   isAdmin?: boolean;
   preferredCurrency?: SupportedCurrency;
+  selectedOrcamentoId?: string | null;
+  orcamentos?: { id: string; name: string; role: string }[];
 }
 
-export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarProps) {
+export function AppSidebar({
+  isAdmin,
+  preferredCurrency = "BRL",
+  selectedOrcamentoId,
+  orcamentos = [],
+}: AppSidebarProps) {
   const pathname = usePathname();
-
-  const items = isAdmin ? [...navItems, ...adminItems] : navItems;
 
   return (
     <Sidebar collapsible="icon">
@@ -62,7 +70,7 @@ export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarPro
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
@@ -75,6 +83,40 @@ export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarPro
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>ADM</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={pathname.startsWith(item.href)}
+                      tooltip={item.title}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel>Orçamento</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <div className="px-2">
+              <OrcamentoSelector
+                current={selectedOrcamentoId ?? null}
+                orcamentos={orcamentos}
+              />
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
 

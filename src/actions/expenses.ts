@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { ActionResult, Expense, ExpenseEntry, ExpenseFilters } from "@/lib/types";
 import { expenseSchema, type ExpenseFormData } from "@/lib/validations/expense";
 import { computeNextDueDate } from "@/lib/recurrence";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 
 export async function createExpense(
   data: ExpenseFormData
@@ -23,6 +24,11 @@ export async function createExpense(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   // Fetch profile for author name
   const { data: profile } = await supabase
     .from("profiles")
@@ -35,6 +41,7 @@ export async function createExpense(
     .insert({
       ...parsed.data,
       user_id: user.id,
+      orcamento_id: orcamentoId,
       cost_center: parsed.data.cost_center ?? "outros",
       currency: parsed.data.currency ?? "BRL",
       created_by_name: profile?.full_name ?? "Desconhecido",
@@ -215,9 +222,15 @@ export async function getExpenses(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   let query = supabase
     .from("expenses")
     .select("*")
+    .eq("orcamento_id", orcamentoId)
     .neq("status", "completed")
     .order("created_at", { ascending: false });
 
@@ -276,10 +289,16 @@ export async function getExpense(
     return { success: false, error: "Não autenticado" };
   }
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
     .eq("id", id)
+    .eq("orcamento_id", orcamentoId)
     .single();
 
   if (error) {
@@ -367,6 +386,7 @@ export async function convertExpenseToPendencia(
     .from("pendencias")
     .insert({
       user_id: user.id,
+      orcamento_id: expense.orcamento_id,
       name: expense.name,
       description: expense.description || null,
       estimated_amount: expense.amount,

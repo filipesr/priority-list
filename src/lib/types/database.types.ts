@@ -28,6 +28,7 @@ export interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   preferred_currency: string;
+  selected_orcamento_id: string | null;
   role: "admin" | "user";
   approved: boolean;
   created_at: string;
@@ -47,6 +48,7 @@ export interface ExchangeRate {
 export interface Income {
   id: string;
   user_id: string;
+  orcamento_id: string;
   name: string;
   amount: number;
   currency: SupportedCurrency;
@@ -68,6 +70,7 @@ export interface ExpenseEntry {
 export interface Expense {
   id: string;
   user_id: string;
+  orcamento_id: string;
   name: string;
   description: string | null;
   amount: number;
@@ -102,6 +105,24 @@ export interface Budget {
   updated_at: string;
 }
 
+export type OrcamentoRole = "owner" | "editor" | "viewer";
+
+export interface Orcamento {
+  id: string;
+  name: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrcamentoMember {
+  id: string;
+  orcamento_id: string;
+  user_id: string;
+  role: OrcamentoRole;
+  created_at: string;
+}
+
 export type PendenciaStatus = "pending" | "resolved";
 
 export type PaymentMode = "single" | "installments";
@@ -109,6 +130,7 @@ export type PaymentMode = "single" | "installments";
 export interface Pendencia {
   id: string;
   user_id: string;
+  orcamento_id: string;
   name: string;
   description: string | null;
   estimated_amount: number | null;

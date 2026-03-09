@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/lib/types";
 import type { PendenciaFormData } from "@/lib/validations/pendencia";
+import { getSelectedOrcamentoId } from "@/actions/orcamentos";
 
 export async function importPendencias(
   pendencias: PendenciaFormData[]
@@ -29,9 +30,15 @@ export async function importPendencias(
 
   const createdByName = profile?.full_name ?? "Desconhecido";
 
+  const orcamentoId = await getSelectedOrcamentoId();
+  if (!orcamentoId) {
+    return { success: false, error: "Nenhum orçamento selecionado" };
+  }
+
   const rows = pendencias.map((p) => ({
     ...p,
     user_id: user.id,
+    orcamento_id: orcamentoId,
     estimated_amount: p.estimated_amount ?? null,
     description: p.description || null,
     notes: p.notes || null,
