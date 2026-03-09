@@ -10,6 +10,7 @@ import {
   TrendingUp,
   CheckCircle2,
   Wallet,
+  Repeat,
 } from "lucide-react";
 import { SensitiveValue } from "@/components/layout/sensitive-value";
 import type { DashboardStats } from "@/actions/dashboard";
@@ -55,10 +56,19 @@ export function StatsCards({ stats }: { stats: DashboardStats }) {
       iconColor: "text-violet-400",
       sensitive: true,
     },
+    {
+      title: "Recorrente Mensal",
+      value: formatCurrency(stats.totalRecurring, c),
+      icon: Repeat,
+      description: "Despesas recorrentes ativas",
+      borderColor: "border-l-cyan-400",
+      iconColor: "text-cyan-400",
+      sensitive: false,
+    },
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {cards.map((card) => (
         <Card key={card.title} className={`border-l-2 ${card.borderColor}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">

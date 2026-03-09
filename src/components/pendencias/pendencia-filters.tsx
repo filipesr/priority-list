@@ -58,11 +58,11 @@ export function PendenciaFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Categoria</Label>
         <Select
-          defaultValue={searchParams.get("category") ?? "all"}
+          value={searchParams.get("category") ?? "all"}
           onValueChange={(v) => updateFilter("category", v)}
         >
           <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Todas" />
+            <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...CATEGORIES]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
@@ -77,11 +77,11 @@ export function PendenciaFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Centro de Custo</Label>
         <Select
-          defaultValue={searchParams.get("cost_center") ?? "all"}
+          value={searchParams.get("cost_center") ?? "all"}
           onValueChange={(v) => updateFilter("cost_center", v)}
         >
           <SelectTrigger className="w-[150px] h-9">
-            <SelectValue placeholder="Todos" />
+            <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...COST_CENTERS]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
@@ -96,11 +96,11 @@ export function PendenciaFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Prioridade</Label>
         <Select
-          defaultValue={searchParams.get("priority") ?? "all"}
+          value={searchParams.get("priority") ?? "all"}
           onValueChange={(v) => updateFilter("priority", v)}
         >
           <SelectTrigger className="w-[130px] h-9">
-            <SelectValue placeholder="Todas" />
+            <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...PRIORITIES]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
@@ -115,11 +115,11 @@ export function PendenciaFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Urgência</Label>
         <Select
-          defaultValue={searchParams.get("urgency") ?? "all"}
+          value={searchParams.get("urgency") ?? "all"}
           onValueChange={(v) => updateFilter("urgency", v)}
         >
           <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Todas" />
+            <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...URGENCIES]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
@@ -134,11 +134,11 @@ export function PendenciaFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Status</Label>
         <Select
-          defaultValue={searchParams.get("status") ?? "all"}
+          value={searchParams.get("status") ?? "all"}
           onValueChange={(v) => updateFilter("status", v)}
         >
           <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Todos" />
+            <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...PENDENCIA_STATUSES]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>

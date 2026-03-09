@@ -24,6 +24,7 @@ export default async function ExpensesPage({
     type: params.type,
     cost_center: params.cost_center,
     search: params.search,
+    period: (params.period as "current_month" | "future" | "all") || "current_month",
   });
 
   const supabase = await createClient();

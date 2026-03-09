@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@/lib/types";
 import type { ExpenseFormData } from "@/lib/validations/expense";
-
 export async function importExpenses(
   expenses: ExpenseFormData[]
 ): Promise<ActionResult<{ imported: number }>> {
@@ -41,8 +40,6 @@ export async function importExpenses(
     custom_category: e.custom_category || null,
     notes: e.notes || null,
     recurrence_frequency: e.recurrence_frequency || null,
-    recurrence_day: e.recurrence_day ?? null,
-    recurrence_month: e.recurrence_month ?? null,
   }));
 
   const { error } = await supabase.from("expenses").insert(rows);

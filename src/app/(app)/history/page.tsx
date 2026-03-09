@@ -13,11 +13,23 @@ export default async function HistoryPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
+
+  // Default to current month when no date filters are provided
+  let startDate = params.startDate;
+  let endDate = params.endDate;
+  if (!startDate && !endDate) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    startDate = `${y}-${String(m).padStart(2, "0")}-01`;
+    endDate = new Date(y, m, 0).toISOString().split("T")[0];
+  }
+
   const result = await getHistory({
     category: params.category,
     cost_center: params.cost_center,
-    startDate: params.startDate,
-    endDate: params.endDate,
+    startDate,
+    endDate,
   });
 
   const supabase = await createClient();

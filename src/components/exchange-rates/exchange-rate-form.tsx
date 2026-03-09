@@ -74,7 +74,7 @@ export function ExchangeRateForm() {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder="Selecione" items={[{ value: "BRL", label: "R$ Real" }, { value: "PYG", label: "₲ Guarani" }]} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

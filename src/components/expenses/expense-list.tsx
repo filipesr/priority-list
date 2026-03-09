@@ -17,42 +17,16 @@ import { CATEGORY_LABELS, URGENCY_LABELS, COST_CENTER_LABELS } from "@/lib/const
 import type { CostCenter, SupportedCurrency } from "@/lib/types";
 import { formatCurrency, convertAmount } from "@/lib/currency";
 import type { RateMap } from "@/lib/currency";
-import { format, differenceInDays, startOfDay, getDay } from "date-fns";
+import { format, differenceInDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowRightLeft } from "lucide-react";
 import { ExpenseEntriesDialog } from "./expense-entries-dialog";
-import { deleteExpense } from "@/actions/expenses";
+import { PostponeExpenseDialog } from "./postpone-expense-dialog";
+import { deleteExpense, convertExpenseToPendencia } from "@/actions/expenses";
 import { toast } from "sonner";
 import type { Expense } from "@/lib/types";
-import type { RecurrenceFrequency } from "@/lib/types";
 import { useSortableTable } from "@/hooks/use-sortable-table";
 import { SortableHeader } from "@/components/ui/sortable-header";
-
-function getRecurringDueDate(
-  frequency: RecurrenceFrequency,
-  day: number,
-  month: number | null,
-  today: Date,
-): Date {
-  const year = today.getFullYear();
-  const m = today.getMonth();
-
-  if (frequency === "monthly") {
-    const daysInMonth = new Date(year, m + 1, 0).getDate();
-    return new Date(year, m, Math.min(day, daysInMonth));
-  }
-  if (frequency === "yearly") {
-    const ym = (month ?? 1) - 1;
-    const daysInMonth = new Date(year, ym + 1, 0).getDate();
-    return new Date(year, ym, Math.min(day, daysInMonth));
-  }
-  // weekly: day = 0-6 (Sun-Sat)
-  const currentDay = getDay(today);
-  const diff = day - currentDay;
-  const result = new Date(today);
-  result.setDate(result.getDate() + diff);
-  return startOfDay(result);
-}
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -75,6 +49,16 @@ export function ExpenseList({
     }
   }
 
+  async function handleConvertToPendencia(id: string) {
+    if (!confirm("Converter esta despesa em pendência? A despesa será removida.")) return;
+    const result = await convertExpenseToPendencia(id);
+    if (result.success) {
+      toast.success("Despesa convertida em pendência");
+    } else {
+      toast.error(result.error);
+    }
+  }
+
   const valueGetters = useMemo(() => ({
     amount: (e: Expense) => {
       if (!rates) return e.amount;
@@ -83,16 +67,18 @@ export function ExpenseList({
         ? e.amount
         : convertAmount(e.amount, cur, preferredCurrency, rates);
     },
-    due_date: (e: Expense) => {
-      if (e.due_date) return e.due_date;
-      if (e.is_recurring && e.recurrence_frequency && e.recurrence_day != null) {
-        return getRecurringDueDate(e.recurrence_frequency, e.recurrence_day, e.recurrence_month, startOfDay(new Date())).toISOString();
-      }
-      return null;
-    },
+    due_date: (e: Expense) => e.due_date ?? null,
   }), [rates, preferredCurrency]);
 
   const { sorted, sortKey, sortDirection, onSort } = useSortableTable(expenses, "due_date", "asc", valueGetters);
+
+  const total = useMemo(() => {
+    if (!rates) return expenses.reduce((sum, e) => sum + e.amount, 0);
+    return expenses.reduce((sum, e) => {
+      const cur = (e.currency ?? "BRL") as SupportedCurrency;
+      return sum + convertAmount(e.amount, cur, preferredCurrency, rates);
+    }, 0);
+  }, [expenses, rates, preferredCurrency]);
 
   if (expenses.length === 0) {
     return (
@@ -106,6 +92,7 @@ export function ExpenseList({
   }
 
   return (
+    <div className="space-y-2">
     <div className="rounded-md border border-border/50">
       <Table>
         <TableHeader>
@@ -132,13 +119,7 @@ export function ExpenseList({
                 <TableCell className="hidden md:table-cell">
                   {(() => {
                     const today = startOfDay(new Date());
-                    let due: Date | null = null;
-
-                    if (expense.due_date) {
-                      due = startOfDay(new Date(expense.due_date));
-                    } else if (expense.is_recurring && expense.recurrence_frequency && expense.recurrence_day != null) {
-                      due = getRecurringDueDate(expense.recurrence_frequency, expense.recurrence_day, expense.recurrence_month, today);
-                    }
+                    const due = expense.due_date ? startOfDay(new Date(expense.due_date + "T00:00:00")) : null;
 
                     if (!due) return "—";
 
@@ -218,6 +199,16 @@ export function ExpenseList({
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <ExpenseEntriesDialog expense={expense} currency={expCurrency} />
+                    <PostponeExpenseDialog expenseId={expense.id} currentDueDate={expense.due_date} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleConvertToPendencia(expense.id)}
+                      title="Converter em pendência"
+                    >
+                      <ArrowRightLeft className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" render={<Link href={`/expenses/${expense.id}`} />}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -236,6 +227,12 @@ export function ExpenseList({
           })}
         </TableBody>
       </Table>
+    </div>
+    <div className="flex justify-end rounded-md border border-border/50 px-4 py-3">
+      <span className="text-sm font-medium">
+        Total: {formatCurrency(total, preferredCurrency)}
+      </span>
+    </div>
     </div>
   );
 }

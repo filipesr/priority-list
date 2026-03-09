@@ -15,9 +15,19 @@ import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { CATEGORIES, COST_CENTERS } from "@/lib/constants";
 
+function getCurrentMonthDefaults() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const startDate = `${y}-${String(m).padStart(2, "0")}-01`;
+  const endDate = new Date(y, m, 0).toISOString().split("T")[0];
+  return { startDate, endDate };
+}
+
 export function HistoryFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const defaults = getCurrentMonthDefaults();
 
   const updateFilter = useCallback(
     (key: string, value: string | null) => {
@@ -47,11 +57,11 @@ export function HistoryFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Categoria</Label>
         <Select
-          defaultValue={searchParams.get("category") ?? "all"}
+          value={searchParams.get("category") ?? "all"}
           onValueChange={(v) => updateFilter("category", v)}
         >
           <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Todas" />
+            <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...CATEGORIES]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
@@ -66,11 +76,11 @@ export function HistoryFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Centro de Custo</Label>
         <Select
-          defaultValue={searchParams.get("cost_center") ?? "all"}
+          value={searchParams.get("cost_center") ?? "all"}
           onValueChange={(v) => updateFilter("cost_center", v)}
         >
           <SelectTrigger className="w-[150px] h-9">
-            <SelectValue placeholder="Todos" />
+            <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...COST_CENTERS]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
@@ -87,7 +97,7 @@ export function HistoryFilters() {
         <Input
           type="date"
           className="w-[160px] h-9"
-          defaultValue={searchParams.get("startDate") ?? ""}
+          defaultValue={searchParams.get("startDate") ?? defaults.startDate}
           onChange={(e) => updateFilter("startDate", e.target.value)}
         />
       </div>
@@ -96,7 +106,7 @@ export function HistoryFilters() {
         <Input
           type="date"
           className="w-[160px] h-9"
-          defaultValue={searchParams.get("endDate") ?? ""}
+          defaultValue={searchParams.get("endDate") ?? defaults.endDate}
           onChange={(e) => updateFilter("endDate", e.target.value)}
         />
       </div>

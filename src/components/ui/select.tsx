@@ -18,13 +18,26 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({
+  className,
+  items,
+  ...props
+}: SelectPrimitive.Value.Props & {
+  items?: { value: string; label: string }[]
+}) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
       {...props}
-    />
+    >
+      {items
+        ? (value) => {
+            const match = items.find((i) => i.value === String(value))
+            return match ? match.label : null
+          }
+        : undefined}
+    </SelectPrimitive.Value>
   )
 }
 

@@ -134,7 +134,7 @@ export function PendenciaForm({ pendencia }: PendenciaFormProps) {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Moeda" />
+                      <SelectValue placeholder="Moeda" items={CURRENCIES} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -161,7 +161,7 @@ export function PendenciaForm({ pendencia }: PendenciaFormProps) {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Selecione" items={CATEGORIES} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -186,7 +186,7 @@ export function PendenciaForm({ pendencia }: PendenciaFormProps) {
                 <Select onValueChange={field.onChange} value={field.value ?? "outros"}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Selecione" items={COST_CENTERS} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -213,7 +213,7 @@ export function PendenciaForm({ pendencia }: PendenciaFormProps) {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Selecione" items={PRIORITIES} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -238,7 +238,7 @@ export function PendenciaForm({ pendencia }: PendenciaFormProps) {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder="Selecione" items={URGENCIES} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>

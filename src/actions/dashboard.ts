@@ -6,11 +6,17 @@ import { getLatestRates } from "@/actions/exchange-rates";
 import { convertAmount } from "@/lib/currency";
 import type { RateMap } from "@/lib/currency";
 
+export interface DashboardPeriod {
+  month: number;
+  year: number;
+}
+
 export interface DashboardStats {
   totalPending: number;
   totalInProgress: number;
   totalCompletedMonth: number;
   totalIncomeMonth: number;
+  totalRecurring: number;
   preferredCurrency: SupportedCurrency;
 }
 
@@ -54,9 +60,18 @@ function sumConverted(
   );
 }
 
-export async function getDashboardStats(): Promise<
-  ActionResult<DashboardStats>
-> {
+function getPeriodRange(period?: DashboardPeriod) {
+  const now = new Date();
+  const month = period?.month ?? now.getMonth() + 1;
+  const year = period?.year ?? now.getFullYear();
+  const startOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endOfMonth = new Date(year, month, 0).toISOString().split("T")[0];
+  return { month, year, startOfMonth, endOfMonth };
+}
+
+export async function getDashboardStats(
+  period?: DashboardPeriod
+): Promise<ActionResult<DashboardStats>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -75,13 +90,7 @@ export async function getDashboardStats(): Promise<
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-  const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
-  const endOfMonth = new Date(currentYear, currentMonth, 0)
-    .toISOString()
-    .split("T")[0];
+  const { startOfMonth, endOfMonth } = getPeriodRange(period);
 
   const { data: pending } = await supabase
     .from("expenses")
@@ -105,6 +114,13 @@ export async function getDashboardStats(): Promise<
     .from("incomes")
     .select("amount, currency");
 
+  // Get recurring total
+  const { data: recurring } = await supabase
+    .from("expenses")
+    .select("amount, currency")
+    .eq("is_recurring", true)
+    .neq("status", "completed");
+
   return {
     success: true,
     data: {
@@ -112,14 +128,15 @@ export async function getDashboardStats(): Promise<
       totalInProgress: sumConverted(inProgress, preferredCurrency, rates),
       totalCompletedMonth: sumConverted(completedMonth, preferredCurrency, rates),
       totalIncomeMonth: sumConverted(incomes, preferredCurrency, rates),
+      totalRecurring: sumConverted(recurring, preferredCurrency, rates),
       preferredCurrency,
     },
   };
 }
 
-export async function getCategoryBreakdown(): Promise<
-  ActionResult<CategoryBreakdown[]>
-> {
+export async function getCategoryBreakdown(
+  period?: DashboardPeriod
+): Promise<ActionResult<CategoryBreakdown[]>> {
   const { CATEGORY_LABELS, CATEGORY_COLORS } = await import(
     "@/lib/constants"
   );
@@ -142,10 +159,17 @@ export async function getCategoryBreakdown(): Promise<
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
-  const { data: expenses } = await supabase
+  let query = supabase
     .from("expenses")
     .select("category, amount, currency")
     .neq("status", "completed");
+
+  if (period) {
+    const { startOfMonth, endOfMonth } = getPeriodRange(period);
+    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+  }
+
+  const { data: expenses } = await query;
 
   if (!expenses) {
     return { success: true, data: [] };
@@ -186,9 +210,9 @@ export async function getCategoryBreakdown(): Promise<
   return { success: true, data: result };
 }
 
-export async function getCostCenterBreakdown(): Promise<
-  ActionResult<CostCenterBreakdown[]>
-> {
+export async function getCostCenterBreakdown(
+  period?: DashboardPeriod
+): Promise<ActionResult<CostCenterBreakdown[]>> {
   const { COST_CENTER_LABELS, COST_CENTER_COLORS } = await import(
     "@/lib/constants"
   );
@@ -211,10 +235,17 @@ export async function getCostCenterBreakdown(): Promise<
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
 
-  const { data: expenses } = await supabase
+  let query = supabase
     .from("expenses")
     .select("cost_center, amount, currency")
     .neq("status", "completed");
+
+  if (period) {
+    const { startOfMonth, endOfMonth } = getPeriodRange(period);
+    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+  }
+
+  const { data: expenses } = await query;
 
   if (!expenses) {
     return { success: true, data: [] };
@@ -253,9 +284,9 @@ export async function getCostCenterBreakdown(): Promise<
   return { success: true, data: result };
 }
 
-export async function getMonthlySpending(): Promise<
-  ActionResult<MonthlySpending[]>
-> {
+export async function getMonthlySpending(
+  period?: DashboardPeriod
+): Promise<ActionResult<MonthlySpending[]>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -275,10 +306,11 @@ export async function getMonthlySpending(): Promise<
   const rates = await getLatestRates();
 
   const months: MonthlySpending[] = [];
-  const now = new Date();
+  const { month: refMonth, year: refYear } = getPeriodRange(period);
+  const refDate = new Date(refYear, refMonth - 1, 1);
 
   for (let i = 5; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const date = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const start = `${year}-${String(month).padStart(2, "0")}-01`;

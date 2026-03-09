@@ -138,7 +138,7 @@ export function IncomeForm({ income, onSuccess }: IncomeFormProps) {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder="Selecione" items={CURRENCIES} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -163,7 +163,7 @@ export function IncomeForm({ income, onSuccess }: IncomeFormProps) {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder="Selecione" items={INCOME_TYPES} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -211,7 +211,7 @@ export function IncomeForm({ income, onSuccess }: IncomeFormProps) {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Frequência" />
+                            <SelectValue placeholder="Frequência" items={RECURRENCE_FREQUENCIES} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>

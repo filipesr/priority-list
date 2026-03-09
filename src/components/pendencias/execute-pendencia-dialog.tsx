@@ -116,7 +116,7 @@ export function ExecutePendenciaDialog({ pendencia }: ExecutePendenciaDialogProp
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder="Selecione" items={PAYMENT_MODES} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -163,7 +163,7 @@ export function ExecutePendenciaDialog({ pendencia }: ExecutePendenciaDialogProp
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Moeda" />
+                          <SelectValue placeholder="Moeda" items={CURRENCIES} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

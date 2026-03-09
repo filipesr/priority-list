@@ -84,8 +84,6 @@ export interface Expense {
   notes: string | null;
   is_recurring: boolean;
   recurrence_frequency: RecurrenceFrequency | null;
-  recurrence_day: number | null;
-  recurrence_month: number | null;
   cost_center: CostCenter;
   created_by_name: string | null;
   completed_at: string | null;

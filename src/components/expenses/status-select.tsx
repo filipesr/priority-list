@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { STATUS_LABELS } from "@/lib/constants";
+import { STATUS_LABELS, STATUSES } from "@/lib/constants";
 import type { ExpenseStatus } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -33,9 +33,9 @@ export function StatusSelect({
   }
 
   return (
-    <Select defaultValue={currentStatus} onValueChange={handleChange}>
+    <Select value={currentStatus} onValueChange={handleChange}>
       <SelectTrigger className="w-[140px] h-8 text-xs">
-        <SelectValue />
+        <SelectValue items={STATUSES} />
       </SelectTrigger>
       <SelectContent>
         {Object.entries(STATUS_LABELS).map(([value, label]) => (

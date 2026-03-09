@@ -15,8 +15,6 @@ export const expenseSchema = z.object({
   notes: z.string().max(1000).optional(),
   is_recurring: z.boolean().default(false),
   recurrence_frequency: z.enum(["weekly", "monthly", "yearly"]).optional(),
-  recurrence_day: z.number().int().min(0).max(31).optional(),
-  recurrence_month: z.number().int().min(1).max(12).optional(),
 });
 
 export type ExpenseFormData = z.infer<typeof expenseSchema>;

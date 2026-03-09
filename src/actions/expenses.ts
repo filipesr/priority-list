@@ -4,85 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, Expense, ExpenseEntry, ExpenseFilters } from "@/lib/types";
 import { expenseSchema, type ExpenseFormData } from "@/lib/validations/expense";
-import type { RecurrenceFrequency } from "@/lib/types";
-
-/**
- * Returns the current period's due date as YYYY-MM-DD string.
- * E.g. monthly day 5, today is March 7 → "2026-03-05"
- */
-function computeCurrentDueDate(
-  frequency: RecurrenceFrequency | null,
-  day: number | null,
-  month: number | null,
-): string | null {
-  if (!frequency || day == null) return null;
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = today.getMonth();
-
-  if (frequency === "monthly") {
-    const daysInMonth = new Date(y, m + 1, 0).getDate();
-    const d = Math.min(day, daysInMonth);
-    return formatDateISO(new Date(y, m, d));
-  }
-  if (frequency === "yearly") {
-    const ym = (month ?? 1) - 1;
-    const daysInMonth = new Date(y, ym + 1, 0).getDate();
-    const d = Math.min(day, daysInMonth);
-    return formatDateISO(new Date(y, ym, d));
-  }
-  // weekly
-  const currentDay = today.getDay();
-  const diff = day - currentDay;
-  const result = new Date(today);
-  result.setDate(result.getDate() + diff);
-  return formatDateISO(result);
-}
-
-/**
- * Returns the NEXT period's due date as YYYY-MM-DD string.
- * If a current due_date exists, advances from it; otherwise advances from current period.
- */
-function computeNextDueDate(
-  frequency: RecurrenceFrequency | null,
-  day: number | null,
-  month: number | null,
-  currentDueDate: string | null,
-): string | null {
-  if (!frequency || day == null) return null;
-
-  // Start from the current due date or compute the current period's date
-  const base = currentDueDate
-    ? new Date(currentDueDate + "T00:00:00")
-    : (() => {
-        const cd = computeCurrentDueDate(frequency, day, month);
-        return cd ? new Date(cd + "T00:00:00") : new Date();
-      })();
-
-  if (frequency === "monthly") {
-    const next = new Date(base.getFullYear(), base.getMonth() + 1, 1);
-    const daysInMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-    next.setDate(Math.min(day, daysInMonth));
-    return formatDateISO(next);
-  }
-  if (frequency === "yearly") {
-    const next = new Date(base.getFullYear() + 1, (month ?? 1) - 1, 1);
-    const daysInMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-    next.setDate(Math.min(day, daysInMonth));
-    return formatDateISO(next);
-  }
-  // weekly
-  const next = new Date(base);
-  next.setDate(next.getDate() + 7);
-  return formatDateISO(next);
-}
-
-function formatDateISO(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+import { computeNextDueDate } from "@/lib/recurrence";
 
 export async function createExpense(
   data: ExpenseFormData
@@ -116,17 +38,11 @@ export async function createExpense(
       cost_center: parsed.data.cost_center ?? "outros",
       currency: parsed.data.currency ?? "BRL",
       created_by_name: profile?.full_name ?? "Desconhecido",
-      due_date: parsed.data.due_date || (
-        parsed.data.is_recurring
-          ? computeCurrentDueDate(parsed.data.recurrence_frequency ?? null, parsed.data.recurrence_day ?? null, parsed.data.recurrence_month ?? null)
-          : null
-      ),
+      due_date: parsed.data.due_date || null,
       description: parsed.data.description || null,
       custom_category: parsed.data.custom_category || null,
       notes: parsed.data.notes || null,
       recurrence_frequency: parsed.data.recurrence_frequency || null,
-      recurrence_day: parsed.data.recurrence_day ?? null,
-      recurrence_month: parsed.data.recurrence_month ?? null,
     })
     .select()
     .single();
@@ -165,17 +81,11 @@ export async function updateExpense(
       ...parsed.data,
       cost_center: parsed.data.cost_center ?? "outros",
       currency: parsed.data.currency ?? "BRL",
-      due_date: parsed.data.due_date || (
-        parsed.data.is_recurring
-          ? computeCurrentDueDate(parsed.data.recurrence_frequency ?? null, parsed.data.recurrence_day ?? null, parsed.data.recurrence_month ?? null)
-          : null
-      ),
+      due_date: parsed.data.due_date || null,
       description: parsed.data.description || null,
       custom_category: parsed.data.custom_category || null,
       notes: parsed.data.notes || null,
       recurrence_frequency: parsed.data.recurrence_frequency || null,
-      recurrence_day: parsed.data.recurrence_day ?? null,
-      recurrence_month: parsed.data.recurrence_month ?? null,
     })
     .eq("id", id)
     .select()
@@ -265,22 +175,8 @@ export async function updateExpenseStatus(
   if (status === "completed" && expense.is_recurring) {
     const nextDueDate = computeNextDueDate(
       expense.recurrence_frequency,
-      expense.recurrence_day,
-      expense.recurrence_month,
       expense.due_date,
     );
-
-    // Set due_date on the completed occurrence for historical record
-    if (!expense.due_date && nextDueDate) {
-      await supabase
-        .from("expenses")
-        .update({ due_date: computeCurrentDueDate(
-          expense.recurrence_frequency,
-          expense.recurrence_day,
-          expense.recurrence_month,
-        ) })
-        .eq("id", id);
-    }
 
     const { id: _id, created_at: _ca, updated_at: _ua, completed_at: _coa, ...rest } = expense;
     const { error: insertError } = await supabase
@@ -342,6 +238,20 @@ export async function getExpenses(
   }
   if (filters?.search) {
     query = query.ilike("name", `%${filters.search}%`);
+  }
+  if (filters?.period === "current_month") {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const startOfMonth = `${y}-${String(m).padStart(2, "0")}-01`;
+    const endOfMonth = new Date(y, m, 0).toISOString().split("T")[0];
+    query = query.or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
+  } else if (filters?.period === "future") {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const endOfMonth = new Date(y, m, 0).toISOString().split("T")[0];
+    query = query.gt("due_date", endOfMonth);
   }
 
   const { data, error } = await query;
@@ -405,12 +315,19 @@ export async function addExpenseEntry(
   const entries: ExpenseEntry[] = [...(expense.expense_entries ?? []), entry];
   const executedAmount = entries.reduce((sum, e) => sum + e.amount, 0);
 
+  const updateData: Record<string, unknown> = {
+    expense_entries: entries,
+    executed_amount: executedAmount,
+  };
+
+  // Auto-adjust amount upward when entries exceed the planned value
+  if (executedAmount > expense.amount) {
+    updateData.amount = executedAmount;
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from("expenses")
-    .update({
-      expense_entries: entries,
-      executed_amount: executedAmount,
-    })
+    .update(updateData)
     .eq("id", expenseId)
     .select()
     .single();
@@ -422,6 +339,91 @@ export async function addExpenseEntry(
   revalidatePath("/expenses");
   revalidatePath("/dashboard");
   return { success: true, data: updated };
+}
+
+export async function convertExpenseToPendencia(
+  expenseId: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  const { data: expense, error: fetchError } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("id", expenseId)
+    .single();
+
+  if (fetchError || !expense) {
+    return { success: false, error: "Despesa não encontrada" };
+  }
+
+  const { error: insertError } = await supabase
+    .from("pendencias")
+    .insert({
+      user_id: user.id,
+      name: expense.name,
+      description: expense.description || null,
+      estimated_amount: expense.amount,
+      currency: expense.currency ?? "BRL",
+      category: expense.category,
+      cost_center: expense.cost_center ?? "outros",
+      urgency: expense.urgency,
+      priority: expense.priority,
+      notes: expense.notes || null,
+      status: "pending",
+      created_by_name: expense.created_by_name,
+    });
+
+  if (insertError) {
+    return { success: false, error: `Erro ao criar pendência: ${insertError.message}` };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("expenses")
+    .delete()
+    .eq("id", expenseId);
+
+  if (deleteError) {
+    return { success: false, error: `Erro ao excluir despesa: ${deleteError.message}` };
+  }
+
+  revalidatePath("/expenses");
+  revalidatePath("/pendencias");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function postponeExpense(
+  expenseId: string,
+  newDueDate: string
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  const { error } = await supabase
+    .from("expenses")
+    .update({ due_date: newDueDate })
+    .eq("id", expenseId);
+
+  if (error) {
+    return { success: false, error: `Erro ao adiar despesa: ${error.message}` };
+  }
+
+  revalidatePath("/expenses");
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
 export async function removeExpenseEntry(

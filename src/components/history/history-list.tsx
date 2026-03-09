@@ -9,7 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CATEGORY_LABELS, COST_CENTER_LABELS } from "@/lib/constants";
 import type { CostCenter, SupportedCurrency } from "@/lib/types";
-import { formatCurrency, convertAmount, formatConverted } from "@/lib/currency";
+import { formatCurrency, convertAmount } from "@/lib/currency";
 import type { RateMap } from "@/lib/currency";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,7 +41,8 @@ export function HistoryList({
 
   const total = expenses.reduce((sum, e) => {
     const expCurrency = (e.currency ?? "BRL") as SupportedCurrency;
-    return sum + convertAmount(Number(e.amount), expCurrency, preferredCurrency, r);
+    const value = e.executed_amount && e.executed_amount > 0 ? Number(e.executed_amount) : Number(e.amount);
+    return sum + convertAmount(value, expCurrency, preferredCurrency, r);
   }, 0);
 
   return (
@@ -75,10 +76,21 @@ export function HistoryList({
                 <TableRow key={expense.id}>
                   <TableCell className="font-medium">{expense.name}</TableCell>
                   <TableCell>
-                    <div>{formatCurrency(expense.amount, expCurrency)}</div>
+                    <div>
+                      {showConverted
+                        ? formatCurrency(convertAmount(expense.amount, expCurrency, preferredCurrency, r), preferredCurrency)
+                        : formatCurrency(expense.amount, expCurrency)}
+                    </div>
                     {showConverted && (
                       <div className="text-xs text-muted-foreground">
-                        {formatConverted(expense.amount, expCurrency, preferredCurrency, rates)}
+                        {formatCurrency(expense.amount, expCurrency)}
+                      </div>
+                    )}
+                    {expense.executed_amount != null && expense.executed_amount > 0 && (
+                      <div className={`text-xs ${expense.executed_amount > expense.amount ? "text-destructive" : "text-orange-500"}`}>
+                        Realizado: {showConverted
+                          ? formatCurrency(convertAmount(expense.executed_amount, expCurrency, preferredCurrency, r), preferredCurrency)
+                          : formatCurrency(expense.executed_amount, expCurrency)}
                       </div>
                     )}
                   </TableCell>

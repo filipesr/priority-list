@@ -113,6 +113,9 @@ const CATEGORY_MAP: Record<string, string> = {
 
 const TYPE_MAP: Record<string, string> = {
   recorrente: "recorrente",
+  mensal: "recorrente",
+  semanal: "recorrente",
+  anual: "recorrente",
   esporadico: "esporadico",
   esporádico: "esporadico",
   imprevisto: "imprevisto",
@@ -194,27 +197,53 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
   const n = normalizeRow(row);
 
   const category = CATEGORY_MAP[String(n.category ?? "outro").toLowerCase().trim()] ?? "outro";
-  const type = TYPE_MAP[String(n.type ?? "esporadico").toLowerCase().trim()] ?? "esporadico";
+  const rawType = String(n.type ?? "esporadico").toLowerCase().trim();
+  const type = TYPE_MAP[rawType] ?? "esporadico";
   const priority = PRIORITY_MAP[String(n.priority ?? "medium").toLowerCase().trim()] ?? "medium";
   const urgency = URGENCY_MAP[String(n.urgency ?? "can_wait").toLowerCase().trim()] ?? "can_wait";
   const costCenter = COST_CENTER_MAP[String(n.cost_center ?? "outros").toLowerCase().trim()] ?? "outros";
   const currency = CURRENCY_MAP[String(n.currency ?? "brl").toLowerCase().trim()] ?? "BRL";
   const isRecurring = type === "recorrente";
 
+  // Derive frequency: explicit column > tipo column (if it was a frequency name) > default "monthly"
   const rawFreq = String(n.recurrence_frequency ?? "").toLowerCase().trim();
   const frequency = isRecurring
-    ? (FREQUENCY_MAP[rawFreq] ?? "monthly") as ExpenseFormData["recurrence_frequency"]
+    ? (FREQUENCY_MAP[rawFreq] || FREQUENCY_MAP[rawType] || "monthly") as ExpenseFormData["recurrence_frequency"]
     : undefined;
 
-  let recurrenceDay: number | undefined;
-  let recurrenceMonth: number | undefined;
+  // If CSV has dia_recorrencia but no due_date, compute due_date from it.
+  // Handle old format where dia_recorrencia holds the frequency string and
+  // mes_recorrencia holds the actual day.
+  let dueDate = String(n.due_date ?? "").trim();
+  if (!dueDate && isRecurring && (n.recurrence_day || n.recurrence_month)) {
+    let day = Number(n.recurrence_day);
+    if (isNaN(day) && n.recurrence_month) {
+      // Old format: dia_recorrencia has frequency, mes_recorrencia has the day
+      day = Number(n.recurrence_month);
+    }
 
-  if (isRecurring && n.recurrence_day) {
-    recurrenceDay = Number(n.recurrence_day);
-  }
+    if (!isNaN(day)) {
+    const today = new Date();
+    const y = today.getFullYear();
 
-  if (isRecurring && frequency === "yearly" && n.recurrence_month) {
-    recurrenceMonth = Number(n.recurrence_month);
+    if (frequency === "yearly") {
+      const mo = n.recurrence_month ? Number(n.recurrence_month) - 1 : today.getMonth();
+      const daysInMonth = new Date(y, mo + 1, 0).getDate();
+      const d = new Date(y, mo, Math.min(day, daysInMonth));
+      dueDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    } else if (frequency === "monthly") {
+      const m = today.getMonth();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const d = new Date(y, m, Math.min(day, daysInMonth));
+      dueDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    } else if (frequency === "weekly") {
+      const currentDay = today.getDay();
+      const diff = day - currentDay;
+      const result = new Date(today);
+      result.setDate(result.getDate() + diff);
+      dueDate = `${result.getFullYear()}-${String(result.getMonth() + 1).padStart(2, "0")}-${String(result.getDate()).padStart(2, "0")}`;
+    }
+    } // end if (!isNaN(day))
   }
 
   return {
@@ -226,13 +255,11 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
     priority: priority as ExpenseFormData["priority"],
     urgency: urgency as ExpenseFormData["urgency"],
     cost_center: costCenter as ExpenseFormData["cost_center"],
-    due_date: isRecurring ? "" : String(n.due_date ?? "").trim(),
+    due_date: dueDate,
     description: String(n.description ?? "").trim() || undefined,
     notes: String(n.notes ?? "").trim() || undefined,
     is_recurring: isRecurring,
     recurrence_frequency: frequency,
-    recurrence_day: recurrenceDay,
-    recurrence_month: recurrenceMonth,
   };
 }
 

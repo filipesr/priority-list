@@ -50,11 +50,11 @@ export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarPro
   const items = isAdmin ? [...navItems, ...adminItems] : navItems;
 
   return (
-    <Sidebar>
-      <SidebarHeader className="px-6 py-4">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="px-6 py-4 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <Wallet className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold">Priority List</span>
+          <Wallet className="h-6 w-6 shrink-0 text-primary" />
+          <span className="text-lg font-bold group-data-[collapsible=icon]:hidden">Priority List</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -67,6 +67,7 @@ export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarPro
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
                     isActive={pathname.startsWith(item.href)}
+                    tooltip={item.title}
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -77,7 +78,7 @@ export function AppSidebar({ isAdmin, preferredCurrency = "BRL" }: AppSidebarPro
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupLabel>Moeda</SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="px-2">
