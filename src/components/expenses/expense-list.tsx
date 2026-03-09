@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PriorityBadge } from "./priority-badge";
 import { StatusSelect } from "./status-select";
-import { CATEGORY_LABELS, URGENCY_LABELS, COST_CENTER_LABELS } from "@/lib/constants";
+import { CATEGORY_LABELS, URGENCY_LABELS, COST_CENTER_LABELS, PRIORITY_RANK } from "@/lib/constants";
 import type { CostCenter, SupportedCurrency } from "@/lib/types";
 import { formatCurrency, convertAmount } from "@/lib/currency";
 import type { RateMap } from "@/lib/currency";
@@ -68,6 +68,7 @@ export function ExpenseList({
         : convertAmount(e.amount, cur, preferredCurrency, rates);
     },
     due_date: (e: Expense) => e.due_date ?? null,
+    priority: (e: Expense) => PRIORITY_RANK[e.priority] ?? 99,
   }), [rates, preferredCurrency]);
 
   const { sorted, sortKey, sortDirection, onSort } = useSortableTable(expenses, "due_date", "asc", valueGetters);

@@ -22,7 +22,10 @@ export function ExpenseFilters() {
   const updateFilter = useCallback(
     (key: string, value: string | null) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value && value !== "all") {
+      if (key === "period") {
+        // Always keep period in the URL so the select stays in sync
+        params.set(key, value ?? "current_month");
+      } else if (value && value !== "all") {
         params.set(key, value);
       } else {
         params.delete(key);

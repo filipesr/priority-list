@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { PriorityBadge } from "@/components/expenses/priority-badge";
 import { PendenciaStatusBadge } from "./pendencia-status-badge";
 import { ExecutePendenciaDialog } from "./execute-pendencia-dialog";
-import { CATEGORY_LABELS, URGENCY_LABELS, COST_CENTER_LABELS } from "@/lib/constants";
+import { CATEGORY_LABELS, URGENCY_LABELS, COST_CENTER_LABELS, PRIORITY_RANK } from "@/lib/constants";
 import type { CostCenter, SupportedCurrency } from "@/lib/types";
-import { formatCurrency, formatConverted } from "@/lib/currency";
+import { formatCurrency, convertAmount } from "@/lib/currency";
 import type { RateMap } from "@/lib/currency";
 import { Pencil, Trash2 } from "lucide-react";
 import { deletePendencia } from "@/actions/pendencias";
@@ -45,7 +45,19 @@ export function PendenciaList({
     }
   }
 
-  const { sorted, sortKey, sortDirection, onSort } = useSortableTable(pendencias);
+  const valueGetters = {
+    priority: (p: Pendencia) => PRIORITY_RANK[p.priority] ?? 99,
+    estimated_amount: (p: Pendencia) => {
+      if (!p.estimated_amount) return null;
+      if (!rates) return p.estimated_amount;
+      const cur = (p.currency ?? "BRL") as SupportedCurrency;
+      return cur === preferredCurrency
+        ? p.estimated_amount
+        : convertAmount(p.estimated_amount, cur, preferredCurrency, rates);
+    },
+  };
+
+  const { sorted, sortKey, sortDirection, onSort } = useSortableTable(pendencias, undefined, "asc", valueGetters);
 
   if (pendencias.length === 0) {
     return (
@@ -85,10 +97,14 @@ export function PendenciaList({
                 <TableCell>
                   {pendencia.estimated_amount ? (
                     <>
-                      <div>{formatCurrency(pendencia.estimated_amount, pendCurrency)}</div>
+                      <div>
+                        {showConverted
+                          ? formatCurrency(convertAmount(pendencia.estimated_amount, pendCurrency, preferredCurrency, rates!), preferredCurrency)
+                          : formatCurrency(pendencia.estimated_amount, pendCurrency)}
+                      </div>
                       {showConverted && (
                         <div className="text-xs text-muted-foreground">
-                          {formatConverted(pendencia.estimated_amount, pendCurrency, preferredCurrency, rates)}
+                          {formatCurrency(pendencia.estimated_amount, pendCurrency)}
                         </div>
                       )}
                     </>

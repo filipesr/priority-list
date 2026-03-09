@@ -45,6 +45,13 @@ export const PRIORITY_LABELS: Record<PriorityLevel, string> = {
   low: "Baixa",
 };
 
+export const PRIORITY_RANK: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
 export const PRIORITY_WEIGHTS: Record<PriorityLevel, number> = {
   critical: 4,
   high: 3,

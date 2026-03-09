@@ -50,6 +50,10 @@ export function useSortableTable<T>(
     return [...items].sort((a, b) => {
       const va = getter ? getter(a) : (a as Record<string, unknown>)[sortKey];
       const vb = getter ? getter(b) : (b as Record<string, unknown>)[sortKey];
+      // Nulls always go to the bottom, regardless of sort direction
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
       return dir * compareValues(va, vb);
     });
   }, [items, sortKey, sortDirection, valueGetters]);
