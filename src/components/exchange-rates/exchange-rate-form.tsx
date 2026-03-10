@@ -7,7 +7,10 @@ import {
   exchangeRateSchema,
   type ExchangeRateFormData,
 } from "@/lib/validations/exchange-rate";
-import { createExchangeRate } from "@/actions/exchange-rates";
+import {
+  createExchangeRate,
+  importExchangeRates,
+} from "@/actions/exchange-rates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,10 +29,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
+import { useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ExchangeRateForm() {
+  const [isImporting, startImport] = useTransition();
+
+  function handleImport() {
+    startImport(async () => {
+      const result = await importExchangeRates();
+      if (result.success) {
+        const { imported } = result.data!;
+        if (imported.length > 0) {
+          toast.success(`Taxas importadas: ${imported.join(", ")}`);
+        } else {
+          toast.info("Taxas já estão atualizadas");
+        }
+      } else {
+        toast.error(result.error);
+      }
+    });
+  }
+
   const form = useForm<ExchangeRateFormData>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(exchangeRateSchema) as any,
@@ -143,12 +165,27 @@ export function ExchangeRateForm() {
               )}
             />
 
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Registrar Taxa
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Registrar Taxa
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isImporting}
+                onClick={handleImport}
+              >
+                {isImporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Importar
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

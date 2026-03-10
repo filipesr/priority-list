@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getExchangeRates } from "@/actions/exchange-rates";
 import { ExchangeRateForm } from "@/components/exchange-rates/exchange-rate-form";
+import { ExchangeRateChart } from "@/components/exchange-rates/exchange-rate-chart";
 import { ExchangeRateHistory } from "@/components/exchange-rates/exchange-rate-history";
 
 export default async function ExchangeRatesPage() {
@@ -30,7 +31,10 @@ export default async function ExchangeRatesPage() {
       <ExchangeRateForm />
 
       {result.success && (
-        <ExchangeRateHistory rates={result.data ?? []} isAdmin={isAdmin} />
+        <>
+          <ExchangeRateChart rates={result.data ?? []} />
+          <ExchangeRateHistory rates={result.data ?? []} isAdmin={isAdmin} />
+        </>
       )}
     </div>
   );
