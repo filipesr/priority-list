@@ -93,7 +93,7 @@ export function StatsCards({ stats }: { stats: DashboardStats }) {
             <card.icon className={`h-4 w-4 ${card.iconColor}`} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {card.sensitive ? (
                 <SensitiveValue>{card.value}</SensitiveValue>
               ) : (

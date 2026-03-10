@@ -135,13 +135,13 @@ export function PendenciaList({
                     {pendencia.status === "pending" && (
                       <ExecutePendenciaDialog pendencia={pendencia} />
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" render={<Link href={`/pendencias/${pendencia.id}`} />}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8" render={<Link href={`/pendencias/${pendencia.id}`} />}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive"
+                      className="h-9 w-9 sm:h-8 sm:w-8 text-destructive"
                       onClick={() => handleDelete(pendencia.id)}
                     >
                       <Trash2 className="h-4 w-4" />

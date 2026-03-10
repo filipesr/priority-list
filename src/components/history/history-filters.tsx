@@ -53,14 +53,14 @@ export function HistoryFilters() {
     searchParams.has("endDate");
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
       <div className="space-y-1">
         <Label className="text-xs">Categoria</Label>
         <Select
           value={searchParams.get("category") ?? "all"}
           onValueChange={(v) => updateFilter("category", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...CATEGORIES]} />
           </SelectTrigger>
           <SelectContent>
@@ -79,7 +79,7 @@ export function HistoryFilters() {
           value={searchParams.get("cost_center") ?? "all"}
           onValueChange={(v) => updateFilter("cost_center", v)}
         >
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-full sm:w-[150px] h-9">
             <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...COST_CENTERS]} />
           </SelectTrigger>
           <SelectContent>
@@ -96,7 +96,7 @@ export function HistoryFilters() {
         <Label className="text-xs">De</Label>
         <Input
           type="date"
-          className="w-[160px] h-9"
+          className="w-full sm:w-[160px] h-9"
           defaultValue={searchParams.get("startDate") ?? defaults.startDate}
           onChange={(e) => updateFilter("startDate", e.target.value)}
         />
@@ -105,7 +105,7 @@ export function HistoryFilters() {
         <Label className="text-xs">Até</Label>
         <Input
           type="date"
-          className="w-[160px] h-9"
+          className="w-full sm:w-[160px] h-9"
           defaultValue={searchParams.get("endDate") ?? defaults.endDate}
           onChange={(e) => updateFilter("endDate", e.target.value)}
         />

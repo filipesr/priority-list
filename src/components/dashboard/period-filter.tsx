@@ -52,11 +52,11 @@ export function DashboardPeriodFilter({ month, year }: DashboardPeriodFilterProp
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handlePrev}>
+      <Button variant="outline" size="icon" className="h-10 w-10 sm:h-8 sm:w-8" onClick={handlePrev}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <Select value={String(month)} onValueChange={(v) => navigate(Number(v), year)}>
-        <SelectTrigger className="w-[130px] h-8">
+        <SelectTrigger className="w-[110px] sm:w-[130px] h-10 sm:h-8">
           <SelectValue items={Object.entries(MONTH_LABELS).map(([v, l]) => ({ value: v, label: l }))} />
         </SelectTrigger>
         <SelectContent>
@@ -68,7 +68,7 @@ export function DashboardPeriodFilter({ month, year }: DashboardPeriodFilterProp
         </SelectContent>
       </Select>
       <Select value={String(year)} onValueChange={(v) => navigate(month, Number(v))}>
-        <SelectTrigger className="w-[90px] h-8">
+        <SelectTrigger className="w-[80px] sm:w-[90px] h-10 sm:h-8">
           <SelectValue items={years.map((y) => ({ value: String(y), label: String(y) }))} />
         </SelectTrigger>
         <SelectContent>
@@ -79,7 +79,7 @@ export function DashboardPeriodFilter({ month, year }: DashboardPeriodFilterProp
           ))}
         </SelectContent>
       </Select>
-      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleNext}>
+      <Button variant="outline" size="icon" className="h-10 w-10 sm:h-8 sm:w-8" onClick={handleNext}>
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

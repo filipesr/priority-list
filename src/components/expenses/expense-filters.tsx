@@ -49,14 +49,14 @@ export function ExpenseFilters() {
     searchParams.has("period");
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="space-y-1">
+    <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+      <div className="space-y-1 col-span-2">
         <Label className="text-xs">Buscar</Label>
         <Input
           placeholder="Buscar despesa..."
           defaultValue={searchParams.get("search") ?? ""}
           onChange={(e) => updateFilter("search", e.target.value)}
-          className="w-[200px] h-9"
+          className="w-full sm:w-[200px] h-9"
         />
       </div>
       <div className="space-y-1">
@@ -65,7 +65,7 @@ export function ExpenseFilters() {
           value={searchParams.get("category") ?? "all"}
           onValueChange={(v) => updateFilter("category", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...CATEGORIES]} />
           </SelectTrigger>
           <SelectContent>
@@ -84,7 +84,7 @@ export function ExpenseFilters() {
           value={searchParams.get("cost_center") ?? "all"}
           onValueChange={(v) => updateFilter("cost_center", v)}
         >
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-full sm:w-[150px] h-9">
             <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...COST_CENTERS]} />
           </SelectTrigger>
           <SelectContent>
@@ -103,7 +103,7 @@ export function ExpenseFilters() {
           value={searchParams.get("priority") ?? "all"}
           onValueChange={(v) => updateFilter("priority", v)}
         >
-          <SelectTrigger className="w-[130px] h-9">
+          <SelectTrigger className="w-full sm:w-[130px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...PRIORITIES]} />
           </SelectTrigger>
           <SelectContent>
@@ -122,7 +122,7 @@ export function ExpenseFilters() {
           value={searchParams.get("status") ?? "all"}
           onValueChange={(v) => updateFilter("status", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...STATUSES.filter((s) => s.value !== "completed")]} />
           </SelectTrigger>
           <SelectContent>
@@ -141,7 +141,7 @@ export function ExpenseFilters() {
           value={searchParams.get("type") ?? "all"}
           onValueChange={(v) => updateFilter("type", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...TYPES]} />
           </SelectTrigger>
           <SelectContent>
@@ -160,7 +160,7 @@ export function ExpenseFilters() {
           value={searchParams.get("period") ?? "current_month"}
           onValueChange={(v) => updateFilter("period", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, { value: "current_month", label: "Mês Atual" }, { value: "future", label: "Futuras" }]} />
           </SelectTrigger>
           <SelectContent>

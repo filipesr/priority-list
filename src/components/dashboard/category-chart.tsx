@@ -35,7 +35,7 @@ export function CategoryChart({ data, currency = "BRL" }: CategoryChartProps) {
         <CardHeader>
           <CardTitle className="text-base">Gastos por Categoria</CardTitle>
         </CardHeader>
-        <CardContent className="flex h-[300px] items-center justify-center">
+        <CardContent className="flex h-[250px] sm:h-[300px] items-center justify-center">
           <p className="text-muted-foreground">Nenhum dado disponível</p>
         </CardContent>
       </Card>
@@ -48,7 +48,8 @@ export function CategoryChart({ data, currency = "BRL" }: CategoryChartProps) {
         <CardTitle className="text-base">Gastos por Categoria</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <div className="h-[250px] sm:h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)", fontSize: 12 }} />
@@ -63,6 +64,7 @@ export function CategoryChart({ data, currency = "BRL" }: CategoryChartProps) {
             <Bar dataKey="realized" name="Realizado" fill="#34d399" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

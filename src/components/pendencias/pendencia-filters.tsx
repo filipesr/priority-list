@@ -45,14 +45,14 @@ export function PendenciaFilters() {
     searchParams.has("search");
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="space-y-1">
+    <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+      <div className="space-y-1 col-span-2">
         <Label className="text-xs">Buscar</Label>
         <Input
           placeholder="Buscar pendência..."
           defaultValue={searchParams.get("search") ?? ""}
           onChange={(e) => updateFilter("search", e.target.value)}
-          className="w-[200px] h-9"
+          className="w-full sm:w-[200px] h-9"
         />
       </div>
       <div className="space-y-1">
@@ -61,7 +61,7 @@ export function PendenciaFilters() {
           value={searchParams.get("category") ?? "all"}
           onValueChange={(v) => updateFilter("category", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...CATEGORIES]} />
           </SelectTrigger>
           <SelectContent>
@@ -80,7 +80,7 @@ export function PendenciaFilters() {
           value={searchParams.get("cost_center") ?? "all"}
           onValueChange={(v) => updateFilter("cost_center", v)}
         >
-          <SelectTrigger className="w-[150px] h-9">
+          <SelectTrigger className="w-full sm:w-[150px] h-9">
             <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...COST_CENTERS]} />
           </SelectTrigger>
           <SelectContent>
@@ -99,7 +99,7 @@ export function PendenciaFilters() {
           value={searchParams.get("priority") ?? "all"}
           onValueChange={(v) => updateFilter("priority", v)}
         >
-          <SelectTrigger className="w-[130px] h-9">
+          <SelectTrigger className="w-full sm:w-[130px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...PRIORITIES]} />
           </SelectTrigger>
           <SelectContent>
@@ -118,7 +118,7 @@ export function PendenciaFilters() {
           value={searchParams.get("urgency") ?? "all"}
           onValueChange={(v) => updateFilter("urgency", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, ...URGENCIES]} />
           </SelectTrigger>
           <SelectContent>
@@ -137,7 +137,7 @@ export function PendenciaFilters() {
           value={searchParams.get("status") ?? "all"}
           onValueChange={(v) => updateFilter("status", v)}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
             <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...PENDENCIA_STATUSES]} />
           </SelectTrigger>
           <SelectContent>

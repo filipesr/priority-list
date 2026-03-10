@@ -35,7 +35,8 @@ export function DailyFlowChart({ data, currency = "BRL" }: DailyFlowChartProps) 
         <CardTitle className="text-base">Fluxo Diário</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <div className="h-[250px] sm:h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)", fontSize: 12 }} />
@@ -72,6 +73,7 @@ export function DailyFlowChart({ data, currency = "BRL" }: DailyFlowChartProps) 
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

@@ -204,19 +204,19 @@ export function ExpenseList({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-9 w-9 sm:h-8 sm:w-8"
                       onClick={() => handleConvertToPendencia(expense.id)}
                       title="Converter em pendência"
                     >
                       <ArrowRightLeft className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" render={<Link href={`/expenses/${expense.id}`} />}>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8" render={<Link href={`/expenses/${expense.id}`} />}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive"
+                      className="h-9 w-9 sm:h-8 sm:w-8 text-destructive"
                       onClick={() => handleDelete(expense.id)}
                     >
                       <Trash2 className="h-4 w-4" />
