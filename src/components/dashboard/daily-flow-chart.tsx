@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -18,38 +18,25 @@ import {
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { CURRENCY_SYMBOLS } from "@/lib/constants";
-import type { CategoryBreakdownV2 } from "@/actions/dashboard";
+import type { DailyFlowPoint } from "@/actions/dashboard";
 import type { SupportedCurrency } from "@/lib/types";
 
-interface CategoryChartProps {
-  data: CategoryBreakdownV2[];
+interface DailyFlowChartProps {
+  data: DailyFlowPoint[];
   currency?: SupportedCurrency;
 }
 
-export function CategoryChart({ data, currency = "BRL" }: CategoryChartProps) {
+export function DailyFlowChart({ data, currency = "BRL" }: DailyFlowChartProps) {
   const symbol = CURRENCY_SYMBOLS[currency];
-
-  if (data.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Gastos por Categoria</CardTitle>
-        </CardHeader>
-        <CardContent className="flex h-[300px] items-center justify-center">
-          <p className="text-muted-foreground">Nenhum dado disponível</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Gastos por Categoria</CardTitle>
+        <CardTitle className="text-base">Fluxo Diário</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
+          <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)", fontSize: 12 }} />
             <YAxis tickFormatter={(v) => `${symbol}${v}`} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)", fontSize: 12 }} />
@@ -58,10 +45,32 @@ export function CategoryChart({ data, currency = "BRL" }: CategoryChartProps) {
               contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }}
             />
             <Legend />
-            <Bar dataKey="planned" name="Planejado" fill="oklch(0.75 0.02 270)" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="pending" name="Pendente" fill="#fbbf24" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="realized" name="Realizado" fill="#34d399" radius={[4, 4, 0, 0]} />
-          </BarChart>
+            <Line
+              type="monotone"
+              dataKey="planned"
+              name="Planejado"
+              stroke="oklch(0.75 0.02 270)"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="realized"
+              name="Realizado"
+              stroke="#34d399"
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="pending"
+              name="Pendente"
+              stroke="#fbbf24"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

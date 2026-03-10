@@ -13,33 +13,50 @@ export interface DashboardPeriod {
 }
 
 export interface DashboardStats {
-  totalPending: number;
-  totalInProgress: number;
-  totalCompletedMonth: number;
-  totalIncomeMonth: number;
+  totalPlanned: number;
+  totalRealized: number;
   totalRecurring: number;
+  totalUnexpected: number;
+  budgetLimit: number | null;
+  totalIncome: number;
+  balanceCurrent: number;
+  balanceFinal: number;
   preferredCurrency: SupportedCurrency;
 }
 
-export interface CategoryBreakdown {
+export interface CategoryBreakdownV2 {
   category: string;
   label: string;
-  total: number;
-  count: number;
   color: string;
+  planned: number;
+  pending: number;
+  realized: number;
 }
 
-export interface CostCenterBreakdown {
+export interface CostCenterBreakdownV2 {
   costCenter: string;
   label: string;
-  total: number;
-  count: number;
   color: string;
+  planned: number;
+  pending: number;
+  realized: number;
 }
 
-export interface MonthlySpending {
-  month: string;
-  total: number;
+export interface PriorityBreakdownV2 {
+  priority: string;
+  label: string;
+  color: string;
+  planned: number;
+  pending: number;
+  realized: number;
+}
+
+export interface DailyFlowPoint {
+  day: number;
+  label: string;
+  planned: number;
+  realized: number;
+  pending: number;
 }
 
 function sumConverted(
@@ -61,6 +78,20 @@ function sumConverted(
   );
 }
 
+function conv(
+  amount: number,
+  currency: string | undefined,
+  target: SupportedCurrency,
+  rates: RateMap
+): number {
+  return convertAmount(
+    Number(amount),
+    (currency as SupportedCurrency) || "BRL",
+    target,
+    rates
+  );
+}
+
 function getPeriodRange(period?: DashboardPeriod) {
   const now = new Date();
   const month = period?.month ?? now.getMonth() + 1;
@@ -70,17 +101,13 @@ function getPeriodRange(period?: DashboardPeriod) {
   return { month, year, startOfMonth, endOfMonth };
 }
 
-export async function getDashboardStats(
-  period?: DashboardPeriod
-): Promise<ActionResult<DashboardStats>> {
+async function getAuthContext() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { success: false, error: "Não autenticado" };
-  }
+  if (!user) return null;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -90,96 +117,160 @@ export async function getDashboardStats(
 
   const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
   const rates = await getLatestRates();
-
   const orcamentoId = await getSelectedOrcamentoId();
-  if (!orcamentoId) {
-    return { success: false, error: "Nenhum orçamento selecionado" };
+
+  if (!orcamentoId) return null;
+
+  return { supabase, user, preferredCurrency, rates, orcamentoId };
+}
+
+export async function getDashboardStats(
+  period?: DashboardPeriod
+): Promise<ActionResult<DashboardStats>> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
+
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
+  const { startOfMonth, endOfMonth, month, year } = getPeriodRange(period);
+
+  const [
+    { data: pending },
+    { data: inProgress },
+    { data: completedMonth },
+    { data: recurring },
+    { data: unexpected },
+    { data: incomes },
+    { data: budget },
+  ] = await Promise.all([
+    supabase
+      .from("expenses")
+      .select("amount, currency")
+      .eq("orcamento_id", orcamentoId)
+      .eq("status", "pending"),
+    supabase
+      .from("expenses")
+      .select("amount, executed_amount, currency")
+      .eq("orcamento_id", orcamentoId)
+      .eq("status", "in_progress"),
+    supabase
+      .from("expenses")
+      .select("amount, currency")
+      .eq("orcamento_id", orcamentoId)
+      .eq("status", "completed")
+      .gte("completed_at", startOfMonth)
+      .lte("completed_at", `${endOfMonth}T23:59:59`),
+    supabase
+      .from("expenses")
+      .select("amount, currency")
+      .eq("orcamento_id", orcamentoId)
+      .eq("is_recurring", true)
+      .neq("status", "completed"),
+    supabase
+      .from("expenses")
+      .select("amount, currency")
+      .eq("orcamento_id", orcamentoId)
+      .eq("type", "imprevisto")
+      .gte("due_date", startOfMonth)
+      .lte("due_date", endOfMonth),
+    supabase
+      .from("incomes")
+      .select("amount, currency")
+      .eq("orcamento_id", orcamentoId),
+    supabase
+      .from("budgets")
+      .select("total_limit")
+      .eq("orcamento_id", orcamentoId)
+      .eq("month", month)
+      .eq("year", year)
+      .maybeSingle(),
+  ]);
+
+  const totalPending = sumConverted(pending, preferredCurrency, rates);
+  const totalCompleted = sumConverted(completedMonth, preferredCurrency, rates);
+
+  let totalInProgressAmount = 0;
+  let totalInProgressExecuted = 0;
+  if (inProgress) {
+    for (const item of inProgress) {
+      totalInProgressAmount += conv(item.amount, item.currency, preferredCurrency, rates);
+      totalInProgressExecuted += conv(item.executed_amount, item.currency, preferredCurrency, rates);
+    }
   }
 
-  const { startOfMonth, endOfMonth } = getPeriodRange(period);
-
-  const { data: pending } = await supabase
-    .from("expenses")
-    .select("amount, currency")
-    .eq("orcamento_id", orcamentoId)
-    .eq("status", "pending");
-
-  const { data: inProgress } = await supabase
-    .from("expenses")
-    .select("amount, currency")
-    .eq("orcamento_id", orcamentoId)
-    .eq("status", "in_progress");
-
-  const { data: completedMonth } = await supabase
-    .from("expenses")
-    .select("amount, currency")
-    .eq("orcamento_id", orcamentoId)
-    .eq("status", "completed")
-    .gte("completed_at", startOfMonth)
-    .lte("completed_at", `${endOfMonth}T23:59:59`);
-
-  // Get incomes total
-  const { data: incomes } = await supabase
-    .from("incomes")
-    .select("amount, currency")
-    .eq("orcamento_id", orcamentoId);
-
-  // Get recurring total
-  const { data: recurring } = await supabase
-    .from("expenses")
-    .select("amount, currency")
-    .eq("orcamento_id", orcamentoId)
-    .eq("is_recurring", true)
-    .neq("status", "completed");
+  const totalPlanned = totalPending + totalInProgressAmount + totalCompleted;
+  const totalRealized = totalCompleted + totalInProgressExecuted;
+  const inProgressRemainder = totalInProgressAmount - totalInProgressExecuted;
+  const totalIncome = sumConverted(incomes, preferredCurrency, rates);
+  const balanceCurrent = totalIncome - totalRealized - inProgressRemainder;
+  const balanceFinal = totalIncome - totalPlanned;
 
   return {
     success: true,
     data: {
-      totalPending: sumConverted(pending, preferredCurrency, rates),
-      totalInProgress: sumConverted(inProgress, preferredCurrency, rates),
-      totalCompletedMonth: sumConverted(completedMonth, preferredCurrency, rates),
-      totalIncomeMonth: sumConverted(incomes, preferredCurrency, rates),
+      totalPlanned,
+      totalRealized,
       totalRecurring: sumConverted(recurring, preferredCurrency, rates),
+      totalUnexpected: sumConverted(unexpected, preferredCurrency, rates),
+      budgetLimit: budget?.total_limit ?? null,
+      totalIncome,
+      balanceCurrent,
+      balanceFinal,
       preferredCurrency,
     },
   };
 }
 
+type BreakdownAccum = {
+  planned: number;
+  pending: number;
+  realized: number;
+};
+
+function computeBreakdown(
+  expenses: { amount: number; executed_amount: number; currency: string; status: string }[],
+  groupKey: (e: { amount: number; executed_amount: number; currency: string; status: string }) => string,
+  preferredCurrency: SupportedCurrency,
+  rates: RateMap
+): Map<string, BreakdownAccum> {
+  const map = new Map<string, BreakdownAccum>();
+
+  for (const e of expenses) {
+    const key = groupKey(e);
+    const current = map.get(key) ?? { planned: 0, pending: 0, realized: 0 };
+    const amount = conv(e.amount, e.currency, preferredCurrency, rates);
+    const executed = conv(e.executed_amount, e.currency, preferredCurrency, rates);
+
+    current.planned += amount;
+
+    if (e.status === "pending") {
+      current.pending += amount;
+    } else if (e.status === "in_progress") {
+      current.pending += amount - executed;
+      current.realized += executed;
+    } else if (e.status === "completed") {
+      current.realized += amount;
+    }
+
+    map.set(key, current);
+  }
+
+  return map;
+}
+
 export async function getCategoryBreakdown(
   period?: DashboardPeriod
-): Promise<ActionResult<CategoryBreakdown[]>> {
-  const { CATEGORY_LABELS, CATEGORY_COLORS } = await import(
-    "@/lib/constants"
-  );
+): Promise<ActionResult<CategoryBreakdownV2[]>> {
+  const { CATEGORY_LABELS, CATEGORY_COLORS } = await import("@/lib/constants");
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
 
-  if (!user) {
-    return { success: false, error: "Não autenticado" };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("preferred_currency")
-    .eq("id", user.id)
-    .single();
-
-  const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
-  const rates = await getLatestRates();
-
-  const orcamentoId = await getSelectedOrcamentoId();
-  if (!orcamentoId) {
-    return { success: false, error: "Nenhum orçamento selecionado" };
-  }
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
 
   let query = supabase
     .from("expenses")
-    .select("category, amount, currency")
-    .eq("orcamento_id", orcamentoId)
-    .neq("status", "completed");
+    .select("category, amount, executed_amount, currency, status")
+    .eq("orcamento_id", orcamentoId);
 
   if (period) {
     const { startOfMonth, endOfMonth } = getPeriodRange(period);
@@ -187,40 +278,23 @@ export async function getCategoryBreakdown(
   }
 
   const { data: expenses } = await query;
-
-  if (!expenses) {
+  if (!expenses || expenses.length === 0) {
     return { success: true, data: [] };
   }
 
-  const breakdown = new Map<
-    string,
-    { total: number; count: number }
-  >();
+  const breakdown = computeBreakdown(
+    expenses as { amount: number; executed_amount: number; currency: string; status: string }[],
+    (e) => (e as unknown as { category: string }).category,
+    preferredCurrency,
+    rates
+  );
 
-  for (const expense of expenses) {
-    const current = breakdown.get(expense.category) ?? {
-      total: 0,
-      count: 0,
-    };
-    current.total += convertAmount(
-      Number(expense.amount),
-      (expense.currency as SupportedCurrency) || "BRL",
-      preferredCurrency,
-      rates
-    );
-    current.count += 1;
-    breakdown.set(expense.category, current);
-  }
-
-  const result: CategoryBreakdown[] = Array.from(breakdown.entries()).map(
-    ([category, { total, count }]) => ({
+  const result: CategoryBreakdownV2[] = Array.from(breakdown.entries()).map(
+    ([category, vals]) => ({
       category,
-      label:
-        CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category,
-      total,
-      count,
-      color:
-        CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? "#6b7280",
+      label: CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category,
+      color: CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? "#6b7280",
+      ...vals,
     })
   );
 
@@ -229,39 +303,18 @@ export async function getCategoryBreakdown(
 
 export async function getCostCenterBreakdown(
   period?: DashboardPeriod
-): Promise<ActionResult<CostCenterBreakdown[]>> {
-  const { COST_CENTER_LABELS, COST_CENTER_COLORS } = await import(
-    "@/lib/constants"
-  );
+): Promise<ActionResult<CostCenterBreakdownV2[]>> {
+  const { COST_CENTER_LABELS, COST_CENTER_COLORS } = await import("@/lib/constants");
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
 
-  if (!user) {
-    return { success: false, error: "Não autenticado" };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("preferred_currency")
-    .eq("id", user.id)
-    .single();
-
-  const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
-  const rates = await getLatestRates();
-
-  const orcamentoId = await getSelectedOrcamentoId();
-  if (!orcamentoId) {
-    return { success: false, error: "Nenhum orçamento selecionado" };
-  }
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
 
   let query = supabase
     .from("expenses")
-    .select("cost_center, amount, currency")
-    .eq("orcamento_id", orcamentoId)
-    .neq("status", "completed");
+    .select("cost_center, amount, executed_amount, currency, status")
+    .eq("orcamento_id", orcamentoId);
 
   if (period) {
     const { startOfMonth, endOfMonth } = getPeriodRange(period);
@@ -269,100 +322,181 @@ export async function getCostCenterBreakdown(
   }
 
   const { data: expenses } = await query;
-
-  if (!expenses) {
+  if (!expenses || expenses.length === 0) {
     return { success: true, data: [] };
   }
 
-  const breakdown = new Map<
-    string,
-    { total: number; count: number }
-  >();
+  const breakdown = computeBreakdown(
+    expenses as { amount: number; executed_amount: number; currency: string; status: string }[],
+    (e) => (e as unknown as { cost_center: string }).cost_center ?? "outros",
+    preferredCurrency,
+    rates
+  );
 
-  for (const expense of expenses) {
-    const cc = expense.cost_center ?? "outros";
-    const current = breakdown.get(cc) ?? { total: 0, count: 0 };
-    current.total += convertAmount(
-      Number(expense.amount),
-      (expense.currency as SupportedCurrency) || "BRL",
-      preferredCurrency,
-      rates
-    );
-    current.count += 1;
-    breakdown.set(cc, current);
-  }
-
-  const result: CostCenterBreakdown[] = Array.from(breakdown.entries()).map(
-    ([costCenter, { total, count }]) => ({
+  const result: CostCenterBreakdownV2[] = Array.from(breakdown.entries()).map(
+    ([costCenter, vals]) => ({
       costCenter,
-      label:
-        COST_CENTER_LABELS[costCenter as keyof typeof COST_CENTER_LABELS] ?? costCenter,
-      total,
-      count,
-      color:
-        COST_CENTER_COLORS[costCenter as keyof typeof COST_CENTER_COLORS] ?? "#6b7280",
+      label: COST_CENTER_LABELS[costCenter as keyof typeof COST_CENTER_LABELS] ?? costCenter,
+      color: COST_CENTER_COLORS[costCenter as keyof typeof COST_CENTER_COLORS] ?? "#6b7280",
+      ...vals,
     })
   );
 
   return { success: true, data: result };
 }
 
-export async function getMonthlySpending(
+export async function getPriorityBreakdown(
   period?: DashboardPeriod
-): Promise<ActionResult<MonthlySpending[]>> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+): Promise<ActionResult<PriorityBreakdownV2[]>> {
+  const { PRIORITY_LABELS } = await import("@/lib/constants");
 
-  if (!user) {
-    return { success: false, error: "Não autenticado" };
+  const PRIORITY_CHART_COLORS: Record<string, string> = {
+    critical: "#f87171",
+    high: "#fb923c",
+    medium: "#fbbf24",
+    low: "#34d399",
+  };
+
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
+
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
+
+  let query = supabase
+    .from("expenses")
+    .select("priority, amount, executed_amount, currency, status")
+    .eq("orcamento_id", orcamentoId);
+
+  if (period) {
+    const { startOfMonth, endOfMonth } = getPeriodRange(period);
+    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("preferred_currency")
-    .eq("id", user.id)
-    .single();
-
-  const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
-  const rates = await getLatestRates();
-
-  const orcamentoId = await getSelectedOrcamentoId();
-  if (!orcamentoId) {
-    return { success: false, error: "Nenhum orçamento selecionado" };
+  const { data: expenses } = await query;
+  if (!expenses || expenses.length === 0) {
+    return { success: true, data: [] };
   }
 
-  const months: MonthlySpending[] = [];
-  const { month: refMonth, year: refYear } = getPeriodRange(period);
-  const refDate = new Date(refYear, refMonth - 1, 1);
+  const breakdown = computeBreakdown(
+    expenses as { amount: number; executed_amount: number; currency: string; status: string }[],
+    (e) => (e as unknown as { priority: string }).priority,
+    preferredCurrency,
+    rates
+  );
 
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date(refDate.getFullYear(), refDate.getMonth() - i, 1);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const start = `${year}-${String(month).padStart(2, "0")}-01`;
-    const end = new Date(year, month, 0).toISOString().split("T")[0];
+  const order = ["critical", "high", "medium", "low"];
+  const result: PriorityBreakdownV2[] = order
+    .filter((p) => breakdown.has(p))
+    .map((priority) => ({
+      priority,
+      label: PRIORITY_LABELS[priority as keyof typeof PRIORITY_LABELS] ?? priority,
+      color: PRIORITY_CHART_COLORS[priority] ?? "#6b7280",
+      ...breakdown.get(priority)!,
+    }));
 
-    const { data: expenses } = await supabase
-      .from("expenses")
-      .select("amount, currency")
-      .eq("orcamento_id", orcamentoId)
-      .eq("status", "completed")
-      .gte("completed_at", start)
-      .lte("completed_at", `${end}T23:59:59`);
+  return { success: true, data: result };
+}
 
-    const total = sumConverted(expenses, preferredCurrency, rates);
+export async function getDailyFlow(
+  period?: DashboardPeriod
+): Promise<ActionResult<DailyFlowPoint[]>> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
 
-    const monthLabel = date.toLocaleDateString("pt-BR", {
-      month: "short",
-      year: "2-digit",
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
+  const { startOfMonth, endOfMonth, month, year } = getPeriodRange(period);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const { data: expenses } = await supabase
+    .from("expenses")
+    .select("due_date, amount, executed_amount, currency, status, completed_at, expense_entries")
+    .eq("orcamento_id", orcamentoId);
+
+  if (!expenses || expenses.length === 0) {
+    const points: DailyFlowPoint[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      points.push({
+        day: d,
+        label: String(d).padStart(2, "0"),
+        planned: 0,
+        realized: 0,
+        pending: 0,
+      });
+    }
+    return { success: true, data: points };
+  }
+
+  const plannedPerDay = new Array(daysInMonth + 1).fill(0);
+  const realizedPerDay = new Array(daysInMonth + 1).fill(0);
+
+  for (const exp of expenses) {
+    const amount = conv(exp.amount, exp.currency, preferredCurrency, rates);
+
+    // Planned: allocate to due_date day (or day 1 if no due_date)
+    const dueDate = exp.due_date ? new Date(exp.due_date + "T00:00:00") : null;
+    let dueDay = 1;
+    if (dueDate && dueDate.getMonth() + 1 === month && dueDate.getFullYear() === year) {
+      dueDay = dueDate.getDate();
+    } else if (dueDate) {
+      // Due date outside this month — skip for planned
+      if (
+        dueDate < new Date(startOfMonth + "T00:00:00") ||
+        dueDate > new Date(endOfMonth + "T23:59:59")
+      ) {
+        // Still count realized entries that fall in this month
+        const entries = exp.expense_entries as { date: string; amount: number }[] | null;
+        if (entries) {
+          for (const entry of entries) {
+            const entryDate = new Date(entry.date + "T00:00:00");
+            if (entryDate.getMonth() + 1 === month && entryDate.getFullYear() === year) {
+              const entryDay = entryDate.getDate();
+              realizedPerDay[entryDay] += conv(entry.amount, exp.currency, preferredCurrency, rates);
+            }
+          }
+        }
+        continue;
+      }
+    }
+
+    plannedPerDay[dueDay] += amount;
+
+    // Realized: use expense_entries if present, else completed_at
+    const entries = exp.expense_entries as { date: string; amount: number }[] | null;
+    if (entries && entries.length > 0) {
+      for (const entry of entries) {
+        const entryDate = new Date(entry.date + "T00:00:00");
+        if (entryDate.getMonth() + 1 === month && entryDate.getFullYear() === year) {
+          const entryDay = entryDate.getDate();
+          realizedPerDay[entryDay] += conv(entry.amount, exp.currency, preferredCurrency, rates);
+        }
+      }
+    } else if (exp.status === "completed" && exp.completed_at) {
+      const completedDate = new Date(exp.completed_at);
+      if (completedDate.getMonth() + 1 === month && completedDate.getFullYear() === year) {
+        const completedDay = completedDate.getDate();
+        realizedPerDay[completedDay] += amount;
+      }
+    }
+  }
+
+  // Build cumulative
+  const points: DailyFlowPoint[] = [];
+  let cumulPlanned = 0;
+  let cumulRealized = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    cumulPlanned += plannedPerDay[d];
+    cumulRealized += realizedPerDay[d];
+    points.push({
+      day: d,
+      label: String(d).padStart(2, "0"),
+      planned: Math.round(cumulPlanned * 100) / 100,
+      realized: Math.round(cumulRealized * 100) / 100,
+      pending: Math.round((cumulPlanned - cumulRealized) * 100) / 100,
     });
-
-    months.push({ month: monthLabel, total });
   }
 
-  return { success: true, data: months };
+  return { success: true, data: points };
 }
 
 export async function getPriorityListExpenses(): Promise<

@@ -7,7 +7,8 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Cell,
+  CartesianGrid,
+  Legend,
 } from "recharts";
 import {
   Card,
@@ -15,29 +16,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PRIORITY_LABELS } from "@/lib/constants";
-import type { Expense, PriorityLevel } from "@/lib/types";
+import { formatCurrency } from "@/lib/currency";
+import { CURRENCY_SYMBOLS } from "@/lib/constants";
+import type { PriorityBreakdownV2 } from "@/actions/dashboard";
+import type { SupportedCurrency } from "@/lib/types";
 
-const CHART_COLORS: Record<PriorityLevel, string> = {
-  critical: "#f87171",
-  high: "#fb923c",
-  medium: "#fbbf24",
-  low: "#34d399",
-};
+interface PriorityChartProps {
+  data: PriorityBreakdownV2[];
+  currency?: SupportedCurrency;
+}
 
-export function PriorityChart({ expenses }: { expenses: Expense[] }) {
-  const data = (["critical", "high", "medium", "low"] as PriorityLevel[]).map(
-    (priority) => {
-      const filtered = expenses.filter((e) => e.priority === priority);
-      return {
-        name: PRIORITY_LABELS[priority],
-        count: filtered.length,
-        priority,
-      };
-    }
-  );
+export function PriorityChart({ data, currency = "BRL" }: PriorityChartProps) {
+  const symbol = CURRENCY_SYMBOLS[currency];
 
-  if (expenses.length === 0) {
+  if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -62,17 +54,17 @@ export function PriorityChart({ expenses }: { expenses: Expense[] }) {
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
-            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
-            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)" }} />
-            <Tooltip contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }} />
-            <Bar dataKey="count" name="Quantidade" radius={[4, 4, 0, 0]}>
-              {data.map((entry) => (
-                <Cell
-                  key={entry.priority}
-                  fill={CHART_COLORS[entry.priority]}
-                />
-              ))}
-            </Bar>
+            <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
+            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)", fontSize: 12 }} />
+            <YAxis tickFormatter={(v) => `${symbol}${v}`} axisLine={false} tickLine={false} tick={{ fill: "oklch(0.65 0.02 270)", fontSize: 12 }} />
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value), currency)}
+              contentStyle={{ backgroundColor: "oklch(0.18 0.012 270)", border: "1px solid oklch(1 0 0 / 0.08)", borderRadius: "8px", color: "oklch(0.93 0.01 270)" }}
+            />
+            <Legend />
+            <Bar dataKey="planned" name="Planejado" fill="oklch(0.75 0.02 270)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pending" name="Pendente" fill="#fbbf24" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="realized" name="Realizado" fill="#34d399" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
