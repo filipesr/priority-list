@@ -162,12 +162,16 @@ export async function getDashboardStats(
       .from("expenses")
       .select("amount, currency")
       .eq("orcamento_id", orcamentoId)
-      .eq("status", "pending"),
+      .eq("status", "pending")
+      .gte("due_date", startOfMonth)
+      .lte("due_date", endOfMonth),
     supabase
       .from("expenses")
       .select("amount, executed_amount, currency")
       .eq("orcamento_id", orcamentoId)
-      .eq("status", "in_progress"),
+      .eq("status", "in_progress")
+      .gte("due_date", startOfMonth)
+      .lte("due_date", endOfMonth),
     supabase
       .from("expenses")
       .select("amount, currency")
@@ -180,7 +184,9 @@ export async function getDashboardStats(
       .select("amount, currency")
       .eq("orcamento_id", orcamentoId)
       .eq("is_recurring", true)
-      .neq("status", "completed"),
+      .neq("status", "completed")
+      .gte("due_date", startOfMonth)
+      .lte("due_date", endOfMonth),
     supabase
       .from("expenses")
       .select("amount, currency")

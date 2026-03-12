@@ -32,7 +32,7 @@ export default async function ExchangeRatesPage() {
 
       {result.success && (
         <>
-          <ExchangeRateChart rates={result.data ?? []} />
+          <ExchangeRateChart rates={result.data ?? []} month={new Date().getMonth() + 1} year={new Date().getFullYear()} />
           <ExchangeRateHistory rates={result.data ?? []} isAdmin={isAdmin} />
         </>
       )}

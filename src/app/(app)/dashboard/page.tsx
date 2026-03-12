@@ -31,7 +31,9 @@ export default async function DashboardPage({
   const month = params.month ? Number(params.month) : now.getMonth() + 1;
   const year = params.year ? Number(params.year) : now.getFullYear();
   const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
-  const period: DashboardPeriod | undefined = isCurrentMonth ? undefined : { month, year };
+  const period: DashboardPeriod = { month, year };
+
+  console.log("Fetching dashboard data for period:", period);
 
   const [statsResult, categoryResult, costCenterResult, priorityResult, dailyFlowResult, topExpensesResult, yearlyOverviewResult, exchangeRatesResult] =
     await Promise.all([
@@ -88,7 +90,7 @@ export default async function DashboardPage({
         )}
         {exchangeRatesResult.success && (
           <div className="md:col-span-2">
-            <ExchangeRateChart rates={exchangeRatesResult.data ?? []} />
+            <ExchangeRateChart rates={exchangeRatesResult.data ?? []} month={month} year={year} />
           </div>
         )}
         {dailyFlowResult.success && (

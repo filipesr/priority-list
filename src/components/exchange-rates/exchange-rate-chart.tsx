@@ -20,16 +20,19 @@ import type { ExchangeRate } from "@/lib/types";
 
 interface ExchangeRateChartProps {
   rates: ExchangeRate[];
+  month: number;
+  year: number;
 }
 
-function buildChartData(rates: ExchangeRate[]) {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
+function buildChartData(rates: ExchangeRate[], month: number, year: number) {
+  const startOfMonth = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endOfMonth = new Date(year, month, 0).toISOString().split("T")[0];
 
   const recent = rates.filter(
     (r) =>
       (r.currency === "BRL" || r.currency === "PYG") &&
-      new Date(r.effective_date) >= cutoff
+      r.effective_date >= startOfMonth &&
+      r.effective_date <= endOfMonth
   );
 
   // Group by date+currency, keep most recent created_at
@@ -63,15 +66,21 @@ function buildChartData(rates: ExchangeRate[]) {
     });
 }
 
-export function ExchangeRateChart({ rates }: ExchangeRateChartProps) {
-  const data = buildChartData(rates);
+const MONTH_ABBR: Record<number, string> = {
+  1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+  7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
+};
+
+export function ExchangeRateChart({ rates, month, year }: ExchangeRateChartProps) {
+  const data = buildChartData(rates, month, year);
+  const title = `Evolução do Câmbio — ${MONTH_ABBR[month]}/${year}`;
 
   if (data.length < 2) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Evolução do Câmbio (30 dias)
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -87,7 +96,7 @@ export function ExchangeRateChart({ rates }: ExchangeRateChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          Evolução do Câmbio (30 dias)
+          {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
