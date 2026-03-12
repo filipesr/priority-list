@@ -32,6 +32,7 @@ export interface CategoryBreakdownV2 {
   planned: number;
   pending: number;
   realized: number;
+  imprevisto: number;
 }
 
 export interface CostCenterBreakdownV2 {
@@ -41,6 +42,7 @@ export interface CostCenterBreakdownV2 {
   planned: number;
   pending: number;
   realized: number;
+  imprevisto: number;
 }
 
 export interface PriorityBreakdownV2 {
@@ -50,6 +52,7 @@ export interface PriorityBreakdownV2 {
   planned: number;
   pending: number;
   realized: number;
+  imprevisto: number;
 }
 
 export interface DailyFlowPoint {
@@ -65,6 +68,7 @@ export interface TopExpenseItem {
   planned: number;
   pending: number;
   realized: number;
+  imprevisto: number;
 }
 
 export interface YearlyOverviewPoint {
@@ -292,12 +296,12 @@ export async function getCategoryBreakdown(
 
   let query = supabase
     .from("expenses")
-    .select("category, amount, executed_amount, currency, status")
+    .select("category, type, amount, executed_amount, currency, status")
     .eq("orcamento_id", orcamentoId);
 
   if (period) {
     const { startOfMonth, endOfMonth } = getPeriodRange(period);
-    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+    query = query.or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
   }
 
   const { data: expenses } = await query;
@@ -305,21 +309,30 @@ export async function getCategoryBreakdown(
     return { success: true, data: [] };
   }
 
+  const recurring = expenses.filter((e) => (e as unknown as { type: string }).type === "recorrente");
+  const nonRecurring = expenses.filter((e) => (e as unknown as { type: string }).type !== "recorrente");
+
   const breakdown = computeBreakdown(
-    expenses as { amount: number; executed_amount: number; currency: string; status: string }[],
+    recurring as { amount: number; executed_amount: number; currency: string; status: string }[],
     (e) => (e as unknown as { category: string }).category,
     preferredCurrency,
     rates
   );
 
-  const result: CategoryBreakdownV2[] = Array.from(breakdown.entries()).map(
-    ([category, vals]) => ({
-      category,
-      label: CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category,
-      color: CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? "#6b7280",
-      ...vals,
-    })
-  );
+  const impMap = new Map<string, number>();
+  for (const e of nonRecurring) {
+    const cat = (e as unknown as { category: string }).category;
+    impMap.set(cat, (impMap.get(cat) ?? 0) + conv(e.amount, e.currency, preferredCurrency, rates));
+  }
+
+  const allKeys = new Set([...breakdown.keys(), ...impMap.keys()]);
+  const result: CategoryBreakdownV2[] = Array.from(allKeys).map((category) => ({
+    category,
+    label: CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category,
+    color: CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? "#6b7280",
+    ...(breakdown.get(category) ?? { planned: 0, pending: 0, realized: 0 }),
+    imprevisto: Math.round((impMap.get(category) ?? 0) * 100) / 100,
+  }));
 
   return { success: true, data: result };
 }
@@ -336,12 +349,12 @@ export async function getCostCenterBreakdown(
 
   let query = supabase
     .from("expenses")
-    .select("cost_center, amount, executed_amount, currency, status")
+    .select("cost_center, type, amount, executed_amount, currency, status")
     .eq("orcamento_id", orcamentoId);
 
   if (period) {
     const { startOfMonth, endOfMonth } = getPeriodRange(period);
-    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+    query = query.or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
   }
 
   const { data: expenses } = await query;
@@ -349,21 +362,30 @@ export async function getCostCenterBreakdown(
     return { success: true, data: [] };
   }
 
+  const recurring = expenses.filter((e) => (e as unknown as { type: string }).type === "recorrente");
+  const nonRecurring = expenses.filter((e) => (e as unknown as { type: string }).type !== "recorrente");
+
   const breakdown = computeBreakdown(
-    expenses as { amount: number; executed_amount: number; currency: string; status: string }[],
+    recurring as { amount: number; executed_amount: number; currency: string; status: string }[],
     (e) => (e as unknown as { cost_center: string }).cost_center ?? "outros",
     preferredCurrency,
     rates
   );
 
-  const result: CostCenterBreakdownV2[] = Array.from(breakdown.entries()).map(
-    ([costCenter, vals]) => ({
-      costCenter,
-      label: COST_CENTER_LABELS[costCenter as keyof typeof COST_CENTER_LABELS] ?? costCenter,
-      color: COST_CENTER_COLORS[costCenter as keyof typeof COST_CENTER_COLORS] ?? "#6b7280",
-      ...vals,
-    })
-  );
+  const impMap = new Map<string, number>();
+  for (const e of nonRecurring) {
+    const cc = (e as unknown as { cost_center: string }).cost_center ?? "outros";
+    impMap.set(cc, (impMap.get(cc) ?? 0) + conv(e.amount, e.currency, preferredCurrency, rates));
+  }
+
+  const allKeys = new Set([...breakdown.keys(), ...impMap.keys()]);
+  const result: CostCenterBreakdownV2[] = Array.from(allKeys).map((costCenter) => ({
+    costCenter,
+    label: COST_CENTER_LABELS[costCenter as keyof typeof COST_CENTER_LABELS] ?? costCenter,
+    color: COST_CENTER_COLORS[costCenter as keyof typeof COST_CENTER_COLORS] ?? "#6b7280",
+    ...(breakdown.get(costCenter) ?? { planned: 0, pending: 0, realized: 0 }),
+    imprevisto: Math.round((impMap.get(costCenter) ?? 0) * 100) / 100,
+  }));
 
   return { success: true, data: result };
 }
@@ -387,12 +409,12 @@ export async function getPriorityBreakdown(
 
   let query = supabase
     .from("expenses")
-    .select("priority, amount, executed_amount, currency, status")
+    .select("priority, type, amount, executed_amount, currency, status")
     .eq("orcamento_id", orcamentoId);
 
   if (period) {
     const { startOfMonth, endOfMonth } = getPeriodRange(period);
-    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+    query = query.or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
   }
 
   const { data: expenses } = await query;
@@ -400,22 +422,31 @@ export async function getPriorityBreakdown(
     return { success: true, data: [] };
   }
 
+  const recurring = expenses.filter((e) => (e as unknown as { type: string }).type === "recorrente");
+  const nonRecurring = expenses.filter((e) => (e as unknown as { type: string }).type !== "recorrente");
+
   const breakdown = computeBreakdown(
-    expenses as { amount: number; executed_amount: number; currency: string; status: string }[],
+    recurring as { amount: number; executed_amount: number; currency: string; status: string }[],
     (e) => (e as unknown as { priority: string }).priority,
     preferredCurrency,
     rates
   );
 
+  const impMap = new Map<string, number>();
+  for (const e of nonRecurring) {
+    const p = (e as unknown as { priority: string }).priority;
+    impMap.set(p, (impMap.get(p) ?? 0) + conv(e.amount, e.currency, preferredCurrency, rates));
+  }
+
   const order = ["critical", "high", "medium", "low"];
-  const result: PriorityBreakdownV2[] = order
-    .filter((p) => breakdown.has(p))
-    .map((priority) => ({
-      priority,
-      label: PRIORITY_LABELS[priority as keyof typeof PRIORITY_LABELS] ?? priority,
-      color: PRIORITY_CHART_COLORS[priority] ?? "#6b7280",
-      ...breakdown.get(priority)!,
-    }));
+  const allPriorities = new Set([...order.filter((p) => breakdown.has(p)), ...impMap.keys()]);
+  const result: PriorityBreakdownV2[] = Array.from(allPriorities).map((priority) => ({
+    priority,
+    label: PRIORITY_LABELS[priority as keyof typeof PRIORITY_LABELS] ?? priority,
+    color: PRIORITY_CHART_COLORS[priority] ?? "#6b7280",
+    ...(breakdown.get(priority) ?? { planned: 0, pending: 0, realized: 0 }),
+    imprevisto: Math.round((impMap.get(priority) ?? 0) * 100) / 100,
+  }));
 
   return { success: true, data: result };
 }
@@ -432,7 +463,7 @@ export async function getDailyFlow(
 
   const { data: expenses } = await supabase
     .from("expenses")
-    .select("due_date, amount, executed_amount, currency, status, completed_at, expense_entries")
+    .select("due_date, amount, executed_amount, currency, type, status, completed_at, expense_entries")
     .eq("orcamento_id", orcamentoId)
     .or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
 
@@ -450,14 +481,24 @@ export async function getDailyFlow(
     return { success: true, data: points };
   }
 
-  // Calculate total planned (flat line)
-  let totalPlanned = 0;
+  const plannedPerDay = new Array(daysInMonth + 1).fill(0);
   const realizedPerDay = new Array(daysInMonth + 1).fill(0);
 
   for (const exp of expenses) {
     const amount = conv(exp.amount, exp.currency, preferredCurrency, rates);
-    totalPlanned += amount;
 
+    // Planned: recorrente = flat from day 1, others = on due_date
+    if (exp.type === "recorrente") {
+      plannedPerDay[1] += amount;
+    } else {
+      const dueDate = exp.due_date ? new Date(exp.due_date + "T00:00:00") : null;
+      const dueDay = dueDate && dueDate.getMonth() + 1 === month && dueDate.getFullYear() === year
+        ? dueDate.getDate()
+        : 1;
+      plannedPerDay[dueDay] += amount;
+    }
+
+    // Realized: completed on completed_at day, in_progress entries on entry date
     if (exp.status === "completed" && exp.completed_at) {
       const completedDate = new Date(exp.completed_at);
       if (completedDate.getMonth() + 1 === month && completedDate.getFullYear() === year) {
@@ -476,20 +517,20 @@ export async function getDailyFlow(
     }
   }
 
-  totalPlanned = Math.round(totalPlanned * 100) / 100;
-
-  // Build points (realized = daily, not cumulative; pending = planned - cumul realized)
+  // Build points: planned/pending cumulative, realized daily
   const points: DailyFlowPoint[] = [];
+  let cumulPlanned = 0;
   let cumulRealized = 0;
 
   for (let d = 1; d <= daysInMonth; d++) {
+    cumulPlanned += plannedPerDay[d];
     cumulRealized += realizedPerDay[d];
     points.push({
       day: d,
       label: String(d).padStart(2, "0"),
-      planned: totalPlanned,
+      planned: Math.round(cumulPlanned * 100) / 100,
       realized: Math.round(realizedPerDay[d] * 100) / 100,
-      pending: Math.round((totalPlanned - cumulRealized) * 100) / 100,
+      pending: Math.round((cumulPlanned - cumulRealized) * 100) / 100,
     });
   }
 
@@ -506,12 +547,12 @@ export async function getTopExpenses(
 
   let query = supabase
     .from("expenses")
-    .select("name, amount, executed_amount, currency, status")
+    .select("name, type, amount, executed_amount, currency, status")
     .eq("orcamento_id", orcamentoId);
 
   if (period) {
     const { startOfMonth, endOfMonth } = getPeriodRange(period);
-    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+    query = query.or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
   }
 
   const { data: expenses } = await query;
@@ -520,30 +561,34 @@ export async function getTopExpenses(
   }
 
   const items: TopExpenseItem[] = expenses.map((e) => {
+    const isRecurring = (e as unknown as { type: string }).type === "recorrente";
     const amount = conv(e.amount, e.currency, preferredCurrency, rates);
     const executed = conv(e.executed_amount, e.currency, preferredCurrency, rates);
 
     let pending = 0;
     let realized = 0;
 
-    if (e.status === "pending") {
-      pending = amount;
-    } else if (e.status === "in_progress") {
-      pending = amount - executed;
-      realized = executed;
-    } else if (e.status === "completed") {
-      realized = amount;
+    if (isRecurring) {
+      if (e.status === "pending") {
+        pending = amount;
+      } else if (e.status === "in_progress") {
+        pending = amount - executed;
+        realized = executed;
+      } else if (e.status === "completed") {
+        realized = amount;
+      }
     }
 
     return {
       name: e.name as string,
-      planned: Math.round(amount * 100) / 100,
+      planned: Math.round(isRecurring ? amount : 0),
       pending: Math.round(pending * 100) / 100,
       realized: Math.round(realized * 100) / 100,
+      imprevisto: Math.round(isRecurring ? 0 : amount),
     };
   });
 
-  items.sort((a, b) => b.planned - a.planned);
+  items.sort((a, b) => (b.planned + b.imprevisto) - (a.planned + a.imprevisto));
   return { success: true, data: items.slice(0, 15) };
 }
 

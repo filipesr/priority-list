@@ -17,23 +17,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
-import { CURRENCY_SYMBOLS } from "@/lib/constants";
-import type { TopExpenseItem } from "@/actions/dashboard";
+import { CURRENCY_SYMBOLS, MONTH_LABELS } from "@/lib/constants";
+import type { TopExpenseItem, DashboardPeriod } from "@/actions/dashboard";
 import type { SupportedCurrency } from "@/lib/types";
 
 interface TopExpensesChartProps {
   data: TopExpenseItem[];
   currency?: SupportedCurrency;
+  period?: DashboardPeriod;
 }
 
-export function TopExpensesChart({ data, currency = "BRL" }: TopExpensesChartProps) {
+export function TopExpensesChart({ data, currency = "BRL", period }: TopExpensesChartProps) {
   const symbol = CURRENCY_SYMBOLS[currency];
 
   if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Top 15 Despesas</CardTitle>
+          <CardTitle className="text-base">Top 15 Despesas{period ? ` (${MONTH_LABELS[period.month]}/${period.year})` : ""}</CardTitle>
         </CardHeader>
         <CardContent className="flex h-[250px] sm:h-[300px] items-center justify-center">
           <p className="text-muted-foreground">Nenhum dado disponível</p>
@@ -45,7 +46,7 @@ export function TopExpensesChart({ data, currency = "BRL" }: TopExpensesChartPro
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Top 15 Despesas</CardTitle>
+        <CardTitle className="text-base">Top 15 Despesas{period ? ` (${MONTH_LABELS[period.month]}/${period.year})` : ""}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[250px] sm:h-[300px]">
@@ -80,8 +81,7 @@ export function TopExpensesChart({ data, currency = "BRL" }: TopExpensesChartPro
               />
               <Legend />
               <Bar dataKey="planned" name="Planejado" fill="oklch(0.75 0.02 270)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pending" name="Pendente" fill="#fbbf24" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="realized" name="Realizado" fill="#34d399" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="imprevisto" name="Imprevisto" fill="#fb7185" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

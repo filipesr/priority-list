@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CURRENCY_SYMBOLS } from "@/lib/constants";
+import { CURRENCY_SYMBOLS, MONTH_LABELS } from "@/lib/constants";
 import type { ExchangeRate } from "@/lib/types";
 
 interface ExchangeRateChartProps {
@@ -66,14 +66,9 @@ function buildChartData(rates: ExchangeRate[], month: number, year: number) {
     });
 }
 
-const MONTH_ABBR: Record<number, string> = {
-  1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
-  7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
-};
-
 export function ExchangeRateChart({ rates, month, year }: ExchangeRateChartProps) {
   const data = buildChartData(rates, month, year);
-  const title = `Evolução do Câmbio — ${MONTH_ABBR[month]}/${year}`;
+  const title = `Evolução do Câmbio (${MONTH_LABELS[month]}/${year})`;
 
   if (data.length < 2) {
     return (

@@ -70,22 +70,22 @@ export default async function DashboardPage({
       <div className="grid gap-6 grid-cols-1 md:grid-cols-6">
         {topExpensesResult.success && (
           <div className="md:col-span-4">
-            <TopExpensesChart data={topExpensesResult.data ?? []} currency={currency} />
+            <TopExpensesChart data={topExpensesResult.data ?? []} currency={currency} period={period} />
           </div>
         )}
         {categoryResult.success && (
           <div className="md:col-span-2">
-            <CategoryChart data={categoryResult.data ?? []} currency={currency} />
+            <CategoryChart data={categoryResult.data ?? []} currency={currency} period={period} />
           </div>
         )}
         {priorityResult.success && (
           <div className="md:col-span-2">
-            <PriorityChart data={priorityResult.data ?? []} currency={currency} />
+            <PriorityChart data={priorityResult.data ?? []} currency={currency} period={period} />
           </div>
         )}
         {costCenterResult.success && (
           <div className="md:col-span-2">
-            <CostCenterChart data={costCenterResult.data ?? []} currency={currency} />
+            <CostCenterChart data={costCenterResult.data ?? []} currency={currency} period={period} />
           </div>
         )}
         {exchangeRatesResult.success && (
