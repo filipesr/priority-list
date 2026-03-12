@@ -59,6 +59,22 @@ export interface DailyFlowPoint {
   pending: number;
 }
 
+export interface TopExpenseItem {
+  name: string;
+  planned: number;
+  pending: number;
+  realized: number;
+}
+
+export interface YearlyOverviewPoint {
+  month: number;
+  label: string;
+  planned: number;
+  realized: number;
+  revenue: number;
+  balance: number;
+}
+
 function sumConverted(
   items: { amount: number; currency?: string }[] | null,
   target: SupportedCurrency,
@@ -493,6 +509,143 @@ export async function getDailyFlow(
       planned: Math.round(cumulPlanned * 100) / 100,
       realized: Math.round(cumulRealized * 100) / 100,
       pending: Math.round((cumulPlanned - cumulRealized) * 100) / 100,
+    });
+  }
+
+  return { success: true, data: points };
+}
+
+export async function getTopExpenses(
+  period?: DashboardPeriod
+): Promise<ActionResult<TopExpenseItem[]>> {
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
+
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
+
+  let query = supabase
+    .from("expenses")
+    .select("name, amount, executed_amount, currency, status")
+    .eq("orcamento_id", orcamentoId);
+
+  if (period) {
+    const { startOfMonth, endOfMonth } = getPeriodRange(period);
+    query = query.gte("due_date", startOfMonth).lte("due_date", endOfMonth);
+  }
+
+  const { data: expenses } = await query;
+  if (!expenses || expenses.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  const items: TopExpenseItem[] = expenses.map((e) => {
+    const amount = conv(e.amount, e.currency, preferredCurrency, rates);
+    const executed = conv(e.executed_amount, e.currency, preferredCurrency, rates);
+
+    let pending = 0;
+    let realized = 0;
+
+    if (e.status === "pending") {
+      pending = amount;
+    } else if (e.status === "in_progress") {
+      pending = amount - executed;
+      realized = executed;
+    } else if (e.status === "completed") {
+      realized = amount;
+    }
+
+    return {
+      name: e.name as string,
+      planned: Math.round(amount * 100) / 100,
+      pending: Math.round(pending * 100) / 100,
+      realized: Math.round(realized * 100) / 100,
+    };
+  });
+
+  items.sort((a, b) => b.planned - a.planned);
+  return { success: true, data: items.slice(0, 15) };
+}
+
+export async function getYearlyOverview(
+  year: number
+): Promise<ActionResult<YearlyOverviewPoint[]>> {
+  const { MONTH_LABELS } = await import("@/lib/constants");
+
+  const ctx = await getAuthContext();
+  if (!ctx) return { success: false, error: "Não autenticado ou sem orçamento" };
+
+  const { supabase, preferredCurrency, rates, orcamentoId } = ctx;
+
+  const startOfYear = `${year}-01-01`;
+  const endOfYear = `${year}-12-31`;
+
+  const [{ data: expenses }, { data: incomes }] = await Promise.all([
+    supabase
+      .from("expenses")
+      .select("due_date, amount, executed_amount, currency, status, completed_at, expense_entries")
+      .eq("orcamento_id", orcamentoId)
+      .gte("due_date", startOfYear)
+      .lte("due_date", endOfYear),
+    supabase
+      .from("incomes")
+      .select("amount, currency")
+      .eq("orcamento_id", orcamentoId),
+  ]);
+
+  const monthlyRevenue = sumConverted(incomes, preferredCurrency, rates);
+
+  const plannedPerMonth = new Array(13).fill(0);
+  const realizedPerMonth = new Array(13).fill(0);
+
+  if (expenses) {
+    for (const exp of expenses) {
+      const amount = conv(exp.amount, exp.currency, preferredCurrency, rates);
+
+      // Planned: allocate to due_date month
+      if (exp.due_date) {
+        const dueMonth = new Date(exp.due_date + "T00:00:00").getMonth() + 1;
+        if (dueMonth >= 1 && dueMonth <= 12) {
+          plannedPerMonth[dueMonth] += amount;
+        }
+      }
+
+      // Realized: use expense_entries if present, else completed_at
+      const entries = exp.expense_entries as { date: string; amount: number }[] | null;
+      if (entries && entries.length > 0) {
+        for (const entry of entries) {
+          const entryDate = new Date(entry.date + "T00:00:00");
+          if (entryDate.getFullYear() === year) {
+            const entryMonth = entryDate.getMonth() + 1;
+            realizedPerMonth[entryMonth] += conv(entry.amount, exp.currency, preferredCurrency, rates);
+          }
+        }
+      } else if (exp.status === "completed" && exp.completed_at) {
+        const completedDate = new Date(exp.completed_at);
+        if (completedDate.getFullYear() === year) {
+          const completedMonth = completedDate.getMonth() + 1;
+          realizedPerMonth[completedMonth] += amount;
+        }
+      }
+    }
+  }
+
+  const MONTH_ABBR: Record<number, string> = {
+    1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+    7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
+  };
+
+  const points: YearlyOverviewPoint[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const planned = Math.round(plannedPerMonth[m] * 100) / 100;
+    const realized = Math.round(realizedPerMonth[m] * 100) / 100;
+    const revenue = Math.round(monthlyRevenue * 100) / 100;
+    points.push({
+      month: m,
+      label: MONTH_ABBR[m],
+      planned,
+      realized,
+      revenue,
+      balance: Math.round((revenue - realized) * 100) / 100,
     });
   }
 
