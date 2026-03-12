@@ -17,13 +17,14 @@ export default async function ExpensesPage({
   const params = await searchParams;
   const [result, { preferredCurrency, rates }] = await Promise.all([
     getExpenses({
-      status: params.status,
+      status: params.status ?? "not_completed",
       category: params.category,
       priority: params.priority,
       type: params.type,
       cost_center: params.cost_center,
       search: params.search,
       period: (params.period as "current_month" | "future" | "all") || "current_month",
+      recurring: params.recurring,
     }),
     getUserCurrencyAndRates(),
   ]);

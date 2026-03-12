@@ -25,6 +25,9 @@ export function ExpenseFilters() {
       if (key === "period") {
         // Always keep period in the URL so the select stays in sync
         params.set(key, value ?? "current_month");
+      } else if (key === "status") {
+        // Always keep status in the URL so "all" vs "not_completed" are distinguishable
+        params.set(key, value ?? "not_completed");
       } else if (value && value !== "all") {
         params.set(key, value);
       } else {
@@ -46,7 +49,8 @@ export function ExpenseFilters() {
     searchParams.has("type") ||
     searchParams.has("cost_center") ||
     searchParams.has("search") ||
-    searchParams.has("period");
+    searchParams.has("period") ||
+    searchParams.has("recurring");
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
@@ -119,15 +123,16 @@ export function ExpenseFilters() {
       <div className="space-y-1">
         <Label className="text-xs">Status</Label>
         <Select
-          value={searchParams.get("status") ?? "all"}
+          value={searchParams.get("status") ?? "not_completed"}
           onValueChange={(v) => updateFilter("status", v)}
         >
-          <SelectTrigger className="w-full sm:w-[140px] h-9">
-            <SelectValue placeholder="Todos" items={[{ value: "all", label: "Todos" }, ...STATUSES.filter((s) => s.value !== "completed")]} />
+          <SelectTrigger className="w-full sm:w-[160px] h-9">
+            <SelectValue placeholder="Não Concluídos" items={[{ value: "not_completed", label: "Não Concluídos" }, { value: "all", label: "Todos" }, ...STATUSES]} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="not_completed">Não Concluídos</SelectItem>
             <SelectItem value="all">Todos</SelectItem>
-            {STATUSES.filter((s) => s.value !== "completed").map((s) => (
+            {STATUSES.map((s) => (
               <SelectItem key={s.value} value={s.value}>
                 {s.label}
               </SelectItem>
@@ -155,17 +160,33 @@ export function ExpenseFilters() {
         </Select>
       </div>
       <div className="space-y-1">
+        <Label className="text-xs">Recorrência</Label>
+        <Select
+          value={searchParams.get("recurring") ?? "all"}
+          onValueChange={(v) => updateFilter("recurring", v)}
+        >
+          <SelectTrigger className="w-full sm:w-[140px] h-9">
+            <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, { value: "true", label: "Recorrentes" }, { value: "false", label: "Pontuais" }]} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="true">Recorrentes</SelectItem>
+            <SelectItem value="false">Pontuais</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1">
         <Label className="text-xs">Período</Label>
         <Select
           value={searchParams.get("period") ?? "current_month"}
           onValueChange={(v) => updateFilter("period", v)}
         >
           <SelectTrigger className="w-full sm:w-[140px] h-9">
-            <SelectValue placeholder="Todas" items={[{ value: "all", label: "Todas" }, { value: "current_month", label: "Mês Atual" }, { value: "future", label: "Futuras" }]} />
+            <SelectValue placeholder="Pendentes" items={[{ value: "all", label: "Todas" }, { value: "current_month", label: "Pendentes" }, { value: "future", label: "Futuras" }]} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="current_month">Mês Atual</SelectItem>
+            <SelectItem value="current_month">Pendentes</SelectItem>
             <SelectItem value="future">Futuras</SelectItem>
           </SelectContent>
         </Select>

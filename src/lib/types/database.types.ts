@@ -85,7 +85,6 @@ export interface Expense {
   status: ExpenseStatus;
   due_date: string | null;
   notes: string | null;
-  is_recurring: boolean;
   recurrence_frequency: RecurrenceFrequency | null;
   cost_center: CostCenter;
   created_by_name: string | null;

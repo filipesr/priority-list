@@ -270,7 +270,7 @@ export async function executePendencia(
         type: "esporadico",
         priority: pendencia.priority,
         urgency: pendencia.urgency,
-        is_recurring: false,
+
         due_date: start_date,
         notes: pendencia.notes,
         created_by_name: createdByName,
@@ -300,7 +300,7 @@ export async function executePendencia(
         type: "recorrente" as const,
         priority: pendencia.priority,
         urgency: pendencia.urgency,
-        is_recurring: true,
+
         recurrence_frequency: "monthly",
         due_date: dueDate.toISOString().split("T")[0],
         notes: pendencia.notes,

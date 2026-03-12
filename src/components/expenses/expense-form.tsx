@@ -60,13 +60,13 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
       currency: expense?.currency ?? "BRL",
       category: expense?.category ?? "outro",
       custom_category: expense?.custom_category ?? "",
-      type: expense?.is_recurring ? "recorrente" : (expense?.type ?? "esporadico"),
+      type: expense?.type ?? "esporadico",
       priority: expense?.priority ?? "medium",
       urgency: expense?.urgency ?? "can_wait",
       cost_center: expense?.cost_center ?? "outros",
       due_date: expense?.due_date ?? "",
       notes: expense?.notes ?? "",
-      is_recurring: expense?.is_recurring ?? false,
+
       recurrence_frequency: expense?.recurrence_frequency ?? undefined,
     },
   });
@@ -79,12 +79,10 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
   function handleTypeChange(value: string, onChange: (value: string) => void) {
     onChange(value);
     if (value === "recorrente") {
-      form.setValue("is_recurring", true);
       if (!form.getValues("recurrence_frequency")) {
         form.setValue("recurrence_frequency", "monthly");
       }
     } else {
-      form.setValue("is_recurring", false);
       form.setValue("recurrence_frequency", undefined);
     }
   }
@@ -108,11 +106,7 @@ export function ExpenseForm({ expense }: ExpenseFormProps) {
   const recurrenceLabel = isRecurring && watchDueDate ? getRecurrenceLabel(watchDueDate, watchFrequency) : null;
 
   async function onSubmit(data: ExpenseFormData) {
-    if (data.type === "recorrente" || data.is_recurring) {
-      data.type = "recorrente";
-      data.is_recurring = true;
-    } else {
-      data.is_recurring = false;
+    if (data.type !== "recorrente") {
       data.recurrence_frequency = undefined;
     }
 

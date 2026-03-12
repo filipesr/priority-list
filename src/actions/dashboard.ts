@@ -184,7 +184,7 @@ export async function getDashboardStats(
       .from("expenses")
       .select("amount, currency")
       .eq("orcamento_id", orcamentoId)
-      .eq("is_recurring", true)
+      .eq("type", "recorrente")
       .neq("status", "completed")
       .gte("due_date", startOfMonth)
       .lte("due_date", endOfMonth),
@@ -586,7 +586,7 @@ export async function getYearlyOverview(
   const startOfYear = `${year}-01-01`;
   const endOfYear = `${year}-12-31`;
 
-  const [{ data: expenses }, { data: incomes }] = await Promise.all([
+  const [{ data: expenses }, { data: incomes }, { data: recurringExpenses }] = await Promise.all([
     supabase
       .from("expenses")
       .select("due_date, amount, executed_amount, currency, status, completed_at, expense_entries")
@@ -595,11 +595,33 @@ export async function getYearlyOverview(
       .lte("due_date", endOfYear),
     supabase
       .from("incomes")
-      .select("amount, currency")
+      .select("amount, currency, is_recurring, created_at")
       .eq("orcamento_id", orcamentoId),
+    supabase
+      .from("expenses")
+      .select("amount, currency, due_date, recurrence_frequency")
+      .eq("orcamento_id", orcamentoId)
+      .eq("type", "recorrente")
+      .neq("status", "completed"),
   ]);
 
-  const monthlyRevenue = sumConverted(incomes, preferredCurrency, rates);
+  const revenuePerMonth = new Array(13).fill(0);
+  if (incomes) {
+    for (const inc of incomes) {
+      const amount = conv(inc.amount, inc.currency, preferredCurrency, rates);
+      if (inc.is_recurring) {
+        for (let m = 1; m <= 12; m++) {
+          revenuePerMonth[m] += amount;
+        }
+      } else {
+        const createdDate = new Date(inc.created_at);
+        if (createdDate.getFullYear() === year) {
+          const createdMonth = createdDate.getMonth() + 1;
+          revenuePerMonth[createdMonth] += amount;
+        }
+      }
+    }
+  }
 
   const plannedPerMonth = new Array(13).fill(0);
   const realizedPerMonth = new Array(13).fill(0);
@@ -636,6 +658,34 @@ export async function getYearlyOverview(
     }
   }
 
+  // Project recurring expenses into future months that have no concrete rows
+  if (recurringExpenses) {
+    for (const exp of recurringExpenses) {
+      const amount = conv(exp.amount, exp.currency, preferredCurrency, rates);
+      const dueDate = exp.due_date ? new Date(exp.due_date + "T00:00:00") : null;
+      if (!dueDate) continue;
+
+      const dueMonth = dueDate.getMonth() + 1;
+      const dueYear = dueDate.getFullYear();
+
+      if (exp.recurrence_frequency === "monthly") {
+        const startMonth = dueYear < year ? 1 : dueYear === year ? dueMonth + 1 : 13;
+        for (let m = startMonth; m <= 12; m++) {
+          plannedPerMonth[m] += amount;
+        }
+      } else if (exp.recurrence_frequency === "weekly") {
+        const startMonth = dueYear < year ? 1 : dueYear === year ? dueMonth + 1 : 13;
+        for (let m = startMonth; m <= 12; m++) {
+          plannedPerMonth[m] += amount * 4;
+        }
+      } else if (exp.recurrence_frequency === "yearly") {
+        if (year > dueYear) {
+          plannedPerMonth[dueMonth] += amount;
+        }
+      }
+    }
+  }
+
   const MONTH_ABBR: Record<number, string> = {
     1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
     7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
@@ -645,7 +695,7 @@ export async function getYearlyOverview(
   for (let m = 1; m <= 12; m++) {
     const planned = Math.round(plannedPerMonth[m] * 100) / 100;
     const realized = Math.round(realizedPerMonth[m] * 100) / 100;
-    const revenue = Math.round(monthlyRevenue * 100) / 100;
+    const revenue = Math.round(revenuePerMonth[m] * 100) / 100;
     points.push({
       month: m,
       label: MONTH_ABBR[m],

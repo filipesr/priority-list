@@ -258,7 +258,7 @@ function rowToExpense(row: Record<string, unknown>): ExpenseFormData {
     due_date: dueDate,
     description: String(n.description ?? "").trim() || undefined,
     notes: String(n.notes ?? "").trim() || undefined,
-    is_recurring: isRecurring,
+
     recurrence_frequency: frequency,
   };
 }

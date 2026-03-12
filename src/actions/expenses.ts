@@ -160,10 +160,6 @@ export async function updateExpenseStatus(
   const updateData: Record<string, unknown> = { status };
   if (status === "completed") {
     updateData.completed_at = new Date().toISOString();
-    // Mark completed occurrence as non-recurring (it's now history)
-    if (expense.is_recurring) {
-      updateData.is_recurring = false;
-    }
   } else {
     updateData.completed_at = null;
   }
@@ -179,7 +175,7 @@ export async function updateExpenseStatus(
   }
 
   // Create next occurrence for recurring expenses
-  if (status === "completed" && expense.is_recurring) {
+  if (status === "completed" && expense.type === "recorrente") {
     const nextDueDate = computeNextDueDate(
       expense.recurrence_frequency,
       expense.due_date,
@@ -191,7 +187,6 @@ export async function updateExpenseStatus(
       .insert({
         ...rest,
         status: "pending",
-        is_recurring: true,
         completed_at: null,
         due_date: nextDueDate,
         executed_amount: 0,
@@ -231,12 +226,15 @@ export async function getExpenses(
     .from("expenses")
     .select("*")
     .eq("orcamento_id", orcamentoId)
-    .neq("status", "completed")
     .order("created_at", { ascending: false });
 
-  if (filters?.status) {
+  // Status filter
+  if (!filters?.status || filters.status === "not_completed") {
+    query = query.neq("status", "completed");
+  } else if (filters.status !== "all") {
     query = query.eq("status", filters.status);
   }
+
   if (filters?.category) {
     query = query.eq("category", filters.category);
   }
@@ -252,13 +250,17 @@ export async function getExpenses(
   if (filters?.search) {
     query = query.ilike("name", `%${filters.search}%`);
   }
+  if (filters?.recurring === "true") {
+    query = query.eq("type", "recorrente");
+  } else if (filters?.recurring === "false") {
+    query = query.neq("type", "recorrente");
+  }
   if (filters?.period === "current_month") {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const startOfMonth = `${y}-${String(m).padStart(2, "0")}-01`;
     const endOfMonth = new Date(y, m, 0).toISOString().split("T")[0];
-    query = query.or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
+    query = query.or(`due_date.lte.${endOfMonth},due_date.is.null`);
   } else if (filters?.period === "future") {
     const now = new Date();
     const y = now.getFullYear();

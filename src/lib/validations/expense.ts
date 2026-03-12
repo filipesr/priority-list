@@ -13,7 +13,7 @@ export const expenseSchema = z.object({
   cost_center: z.enum(["casa", "carro", "filipe", "mayara", "samuel", "ana", "outros"]).default("outros"),
   due_date: z.string().optional(),
   notes: z.string().max(1000).optional(),
-  is_recurring: z.boolean().default(false),
+
   recurrence_frequency: z.enum(["weekly", "monthly", "yearly"]).optional(),
 });
 

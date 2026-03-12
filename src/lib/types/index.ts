@@ -36,6 +36,7 @@ export type ExpenseFilters = {
   cost_center?: string;
   search?: string;
   period?: "current_month" | "future" | "all";
+  recurring?: string;
 };
 
 export type PendenciaFilters = {
