@@ -1,15 +1,13 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { getExpenses } from "@/actions/expenses";
-import { getLatestRates } from "@/actions/exchange-rates";
-import { createClient } from "@/lib/supabase/server";
+import { getUserCurrencyAndRates } from "@/actions/exchange-rates";
 import { ExpenseList } from "@/components/expenses/expense-list";
 import { ExpenseFilters } from "@/components/expenses/expense-filters";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImportExpensesDialog } from "@/components/expenses/import-expenses-dialog";
-import type { SupportedCurrency } from "@/lib/types";
 
 export default async function ExpensesPage({
   searchParams,
@@ -17,28 +15,18 @@ export default async function ExpensesPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const result = await getExpenses({
-    status: params.status,
-    category: params.category,
-    priority: params.priority,
-    type: params.type,
-    cost_center: params.cost_center,
-    search: params.search,
-    period: (params.period as "current_month" | "future" | "all") || "current_month",
-  });
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("preferred_currency")
-    .eq("id", user!.id)
-    .single();
-
-  const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
-  const rates = await getLatestRates();
+  const [result, { preferredCurrency, rates }] = await Promise.all([
+    getExpenses({
+      status: params.status,
+      category: params.category,
+      priority: params.priority,
+      type: params.type,
+      cost_center: params.cost_center,
+      search: params.search,
+      period: (params.period as "current_month" | "future" | "all") || "current_month",
+    }),
+    getUserCurrencyAndRates(),
+  ]);
 
   return (
     <div className="space-y-6">

@@ -34,24 +34,47 @@ export async function getExchangeRates(): Promise<ActionResult<ExchangeRate[]>> 
 export async function getLatestRates(): Promise<RateMap> {
   const supabase = await createClient();
 
-  const currencies: SupportedCurrency[] = ["BRL", "PYG"];
   const rates: RateMap = { BRL: 1, USD: 1, PYG: 1 };
 
-  for (const currency of currencies) {
-    const { data } = await supabase
-      .from("exchange_rates")
-      .select("rate")
-      .eq("currency", currency)
-      .order("effective_date", { ascending: false })
-      .limit(1)
-      .single();
+  const { data } = await supabase
+    .from("exchange_rates")
+    .select("currency, rate, effective_date")
+    .in("currency", ["BRL", "PYG"])
+    .order("effective_date", { ascending: false });
 
-    if (data) {
-      rates[currency] = Number(data.rate);
+  if (data) {
+    const seen = new Set<string>();
+    for (const row of data) {
+      if (!seen.has(row.currency)) {
+        seen.add(row.currency);
+        rates[row.currency as SupportedCurrency] = Number(row.rate);
+      }
     }
   }
 
   return rates;
+}
+
+export async function getUserCurrencyAndRates(): Promise<{
+  preferredCurrency: SupportedCurrency;
+  rates: RateMap;
+}> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [{ data: profile }, rates] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("preferred_currency")
+      .eq("id", user!.id)
+      .single(),
+    getLatestRates(),
+  ]);
+
+  const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
+  return { preferredCurrency, rates };
 }
 
 export async function createExchangeRate(

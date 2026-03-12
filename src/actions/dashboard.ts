@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, Expense, SupportedCurrency } from "@/lib/types";
 import { getLatestRates } from "@/actions/exchange-rates";
@@ -117,7 +118,7 @@ function getPeriodRange(period?: DashboardPeriod) {
   return { month, year, startOfMonth, endOfMonth };
 }
 
-async function getAuthContext() {
+const getAuthContext = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -138,7 +139,7 @@ async function getAuthContext() {
   if (!orcamentoId) return null;
 
   return { supabase, user, preferredCurrency, rates, orcamentoId };
-}
+});
 
 export async function getDashboardStats(
   period?: DashboardPeriod

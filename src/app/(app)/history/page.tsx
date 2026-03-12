@@ -1,11 +1,9 @@
 import { Suspense } from "react";
 import { getHistory } from "@/actions/history";
-import { getLatestRates } from "@/actions/exchange-rates";
-import { createClient } from "@/lib/supabase/server";
+import { getUserCurrencyAndRates } from "@/actions/exchange-rates";
 import { HistoryList } from "@/components/history/history-list";
 import { HistoryFilters } from "@/components/history/history-filters";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SupportedCurrency } from "@/lib/types";
 
 export default async function HistoryPage({
   searchParams,
@@ -25,25 +23,15 @@ export default async function HistoryPage({
     endDate = new Date(y, m, 0).toISOString().split("T")[0];
   }
 
-  const result = await getHistory({
-    category: params.category,
-    cost_center: params.cost_center,
-    startDate,
-    endDate,
-  });
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("preferred_currency")
-    .eq("id", user!.id)
-    .single();
-
-  const preferredCurrency = (profile?.preferred_currency ?? "BRL") as SupportedCurrency;
-  const rates = await getLatestRates();
+  const [result, { preferredCurrency, rates }] = await Promise.all([
+    getHistory({
+      category: params.category,
+      cost_center: params.cost_center,
+      startDate,
+      endDate,
+    }),
+    getUserCurrencyAndRates(),
+  ]);
 
   return (
     <div className="space-y-6">
