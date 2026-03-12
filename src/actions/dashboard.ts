@@ -433,7 +433,8 @@ export async function getDailyFlow(
   const { data: expenses } = await supabase
     .from("expenses")
     .select("due_date, amount, executed_amount, currency, status, completed_at, expense_entries")
-    .eq("orcamento_id", orcamentoId);
+    .eq("orcamento_id", orcamentoId)
+    .or(`and(due_date.gte.${startOfMonth},due_date.lte.${endOfMonth}),due_date.is.null`);
 
   if (!expenses || expenses.length === 0) {
     const points: DailyFlowPoint[] = [];
@@ -449,73 +450,46 @@ export async function getDailyFlow(
     return { success: true, data: points };
   }
 
-  const plannedPerDay = new Array(daysInMonth + 1).fill(0);
+  // Calculate total planned (flat line)
+  let totalPlanned = 0;
   const realizedPerDay = new Array(daysInMonth + 1).fill(0);
 
   for (const exp of expenses) {
     const amount = conv(exp.amount, exp.currency, preferredCurrency, rates);
+    totalPlanned += amount;
 
-    // Planned: allocate to due_date day (or day 1 if no due_date)
-    const dueDate = exp.due_date ? new Date(exp.due_date + "T00:00:00") : null;
-    let dueDay = 1;
-    if (dueDate && dueDate.getMonth() + 1 === month && dueDate.getFullYear() === year) {
-      dueDay = dueDate.getDate();
-    } else if (dueDate) {
-      // Due date outside this month — skip for planned
-      if (
-        dueDate < new Date(startOfMonth + "T00:00:00") ||
-        dueDate > new Date(endOfMonth + "T23:59:59")
-      ) {
-        // Still count realized entries that fall in this month
-        const entries = exp.expense_entries as { date: string; amount: number }[] | null;
-        if (entries) {
-          for (const entry of entries) {
-            const entryDate = new Date(entry.date + "T00:00:00");
-            if (entryDate.getMonth() + 1 === month && entryDate.getFullYear() === year) {
-              const entryDay = entryDate.getDate();
-              realizedPerDay[entryDay] += conv(entry.amount, exp.currency, preferredCurrency, rates);
-            }
-          }
-        }
-        continue;
-      }
-    }
-
-    plannedPerDay[dueDay] += amount;
-
-    // Realized: use expense_entries if present, else completed_at
-    const entries = exp.expense_entries as { date: string; amount: number }[] | null;
-    if (entries && entries.length > 0) {
-      for (const entry of entries) {
-        const entryDate = new Date(entry.date + "T00:00:00");
-        if (entryDate.getMonth() + 1 === month && entryDate.getFullYear() === year) {
-          const entryDay = entryDate.getDate();
-          realizedPerDay[entryDay] += conv(entry.amount, exp.currency, preferredCurrency, rates);
-        }
-      }
-    } else if (exp.status === "completed" && exp.completed_at) {
+    if (exp.status === "completed" && exp.completed_at) {
       const completedDate = new Date(exp.completed_at);
       if (completedDate.getMonth() + 1 === month && completedDate.getFullYear() === year) {
-        const completedDay = completedDate.getDate();
-        realizedPerDay[completedDay] += amount;
+        realizedPerDay[completedDate.getDate()] += amount;
+      }
+    } else if (exp.status === "in_progress") {
+      const entries = exp.expense_entries as { date: string; amount: number }[] | null;
+      if (entries) {
+        for (const entry of entries) {
+          const entryDate = new Date(entry.date + "T00:00:00");
+          if (entryDate.getMonth() + 1 === month && entryDate.getFullYear() === year) {
+            realizedPerDay[entryDate.getDate()] += conv(entry.amount, exp.currency, preferredCurrency, rates);
+          }
+        }
       }
     }
   }
 
-  // Build cumulative
+  totalPlanned = Math.round(totalPlanned * 100) / 100;
+
+  // Build points (realized = daily, not cumulative; pending = planned - cumul realized)
   const points: DailyFlowPoint[] = [];
-  let cumulPlanned = 0;
   let cumulRealized = 0;
 
   for (let d = 1; d <= daysInMonth; d++) {
-    cumulPlanned += plannedPerDay[d];
     cumulRealized += realizedPerDay[d];
     points.push({
       day: d,
       label: String(d).padStart(2, "0"),
-      planned: Math.round(cumulPlanned * 100) / 100,
-      realized: Math.round(cumulRealized * 100) / 100,
-      pending: Math.round((cumulPlanned - cumulRealized) * 100) / 100,
+      planned: totalPlanned,
+      realized: Math.round(realizedPerDay[d] * 100) / 100,
+      pending: Math.round((totalPlanned - cumulRealized) * 100) / 100,
     });
   }
 
