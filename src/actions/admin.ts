@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import type { ActionResult, Profile } from "@/lib/types";
 
@@ -89,6 +90,36 @@ export async function approveUser(userId: string): Promise<ActionResult> {
 
   if (error) {
     return { success: false, error: "Erro ao aprovar usuário" };
+  }
+
+  // Create personal orcamento for the new user (bypasses RLS)
+  const admin = createAdminClient();
+
+  const { data: userProfile } = await admin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", userId)
+    .single();
+
+  const name = userProfile?.full_name || "Usuário";
+
+  const { data: orcamento } = await admin
+    .from("orcamentos")
+    .insert({ name: `Orçamento de ${name}`, created_by: userId })
+    .select("id")
+    .single();
+
+  if (orcamento) {
+    await admin.from("orcamento_members").insert({
+      orcamento_id: orcamento.id,
+      user_id: userId,
+      role: "owner",
+    });
+
+    await admin
+      .from("profiles")
+      .update({ selected_orcamento_id: orcamento.id })
+      .eq("id", userId);
   }
 
   revalidatePath("/admin");
