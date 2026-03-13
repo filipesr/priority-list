@@ -189,7 +189,6 @@ export async function getDashboardStats(
       .select("amount, currency")
       .eq("orcamento_id", orcamentoId)
       .eq("type", "recorrente")
-      .neq("status", "completed")
       .gte("due_date", startOfMonth)
       .lte("due_date", endOfMonth),
     supabase
