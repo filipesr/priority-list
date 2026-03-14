@@ -35,11 +35,12 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Redirect unauthenticated users to login (except auth routes)
+  // Redirect unauthenticated users to login (except auth routes and landing)
   if (
     !user &&
     !pathname.startsWith("/login") &&
-    !pathname.startsWith("/auth")
+    !pathname.startsWith("/auth") &&
+    pathname !== "/"
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -53,12 +54,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Redirect authenticated users from landing to dashboard
+  if (user && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
   // Approval check for authenticated users on app routes
   if (
     user &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/auth") &&
-    !pathname.startsWith("/pending-approval")
+    !pathname.startsWith("/pending-approval") &&
+    pathname !== "/"
   ) {
     const { data: profile } = await supabase
       .from("profiles")
