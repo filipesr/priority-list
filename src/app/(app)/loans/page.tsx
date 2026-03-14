@@ -15,15 +15,16 @@ export default async function LoansPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const [result, summaryResult, { preferredCurrency }] = await Promise.all([
+  const [result, currencyData] = await Promise.all([
     getLoans({
       direction: params.direction,
       status: params.status,
       search: params.search,
     }),
-    getLoansSummary(),
     getUserCurrencyAndRates(),
   ]);
+  const { preferredCurrency, rates } = currencyData;
+  const summaryResult = await getLoansSummary(rates, preferredCurrency);
 
   return (
     <div className="space-y-6">
@@ -55,7 +56,7 @@ export default async function LoansPage({
       </Suspense>
 
       {result.success ? (
-        <LoanList loans={result.data ?? []} />
+        <LoanList loans={result.data ?? []} preferredCurrency={preferredCurrency} rates={rates} />
       ) : (
         <p className="text-destructive">{result.error}</p>
       )}

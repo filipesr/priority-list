@@ -18,7 +18,7 @@ import {
   LOAN_STATUS_COLORS,
   CURRENCY_SYMBOLS,
 } from "@/lib/constants";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount, type RateMap } from "@/lib/currency";
 import { Search, Trash2 } from "lucide-react";
 import { deleteLoan } from "@/actions/loans";
 import { toast } from "sonner";
@@ -28,9 +28,11 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 
 interface LoanListProps {
   loans: LoanWithSummary[];
+  preferredCurrency: SupportedCurrency;
+  rates: RateMap;
 }
 
-export function LoanList({ loans }: LoanListProps) {
+export function LoanList({ loans, preferredCurrency, rates }: LoanListProps) {
   async function handleDelete(id: string) {
     if (!confirm("Tem certeza que deseja excluir este empréstimo?")) return;
     const result = await deleteLoan(id);
@@ -61,10 +63,10 @@ export function LoanList({ loans }: LoanListProps) {
           <TableRow>
             <SortableHeader label="Contraparte" sortKey="counterparty" active={sortKey === "counterparty"} direction={sortDirection} onSort={onSort} />
             <SortableHeader label="Direção" sortKey="direction" active={sortKey === "direction"} direction={sortDirection} onSort={onSort} />
-            <SortableHeader label="Principal" sortKey="principal" active={sortKey === "principal"} direction={sortDirection} onSort={onSort} />
+            <SortableHeader label="Saldo Atual" sortKey="current_balance" active={sortKey === "current_balance"} direction={sortDirection} onSort={onSort} />
+            {/* <SortableHeader label="Principal" sortKey="principal" active={sortKey === "principal"} direction={sortDirection} onSort={onSort} /> */}
             <SortableHeader label="Juros (%)" sortKey="interest_rate" active={sortKey === "interest_rate"} direction={sortDirection} onSort={onSort} className="hidden md:table-cell" />
             <SortableHeader label="Total Pago" sortKey="total_paid" active={sortKey === "total_paid"} direction={sortDirection} onSort={onSort} className="hidden md:table-cell" />
-            <SortableHeader label="Saldo Atual" sortKey="current_balance" active={sortKey === "current_balance"} direction={sortDirection} onSort={onSort} />
             <SortableHeader label="Vencimento" sortKey="due_date" active={sortKey === "due_date"} direction={sortDirection} onSort={onSort} className="hidden lg:table-cell" />
             <TableHead>Status</TableHead>
             <TableHead className="w-[100px]">Ações</TableHead>
@@ -73,6 +75,7 @@ export function LoanList({ loans }: LoanListProps) {
         <TableBody>
           {sorted.map((loan) => {
             const cur = (loan.currency ?? "BRL") as SupportedCurrency;
+            const showConverted = cur !== preferredCurrency;
             return (
               <TableRow key={loan.id}>
                 <TableCell className="font-medium">{loan.counterparty}</TableCell>
@@ -81,15 +84,37 @@ export function LoanList({ loans }: LoanListProps) {
                     {LOAN_DIRECTION_LABELS[loan.direction as LoanDirection]}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatCurrency(loan.principal, cur)}</TableCell>
+                <TableCell className="font-medium">
+                  <div>
+                    {showConverted
+                      ? formatCurrency(convertAmount(loan.current_balance, cur, preferredCurrency, rates), preferredCurrency)
+                      : formatCurrency(loan.current_balance, cur)}
+                  </div>
+                  {showConverted && (
+                    <div className="text-xs text-muted-foreground">
+                      {formatCurrency(loan.current_balance, cur)}
+                    </div>
+                  )}
+                </TableCell>
+                {/* <TableCell>{formatCurrency(loan.principal, cur)}</TableCell> */}
                 <TableCell className="hidden md:table-cell">
                   {loan.interest_rate > 0 ? `${loan.interest_rate}%` : "—"}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {loan.total_paid > 0 ? formatCurrency(loan.total_paid, cur) : "—"}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {formatCurrency(loan.current_balance, cur)}
+                  {loan.total_paid > 0 ? (
+                    <>
+                      <div>
+                        {showConverted
+                          ? formatCurrency(convertAmount(loan.total_paid, cur, preferredCurrency, rates), preferredCurrency)
+                          : formatCurrency(loan.total_paid, cur)}
+                      </div>
+                      {showConverted && (
+                        <div className="text-xs text-muted-foreground">
+                          {formatCurrency(loan.total_paid, cur)}
+                        </div>
+                      )}
+                    </>
+                  ) : "—"}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
                   {loan.due_date ?? "—"}

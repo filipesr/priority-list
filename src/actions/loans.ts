@@ -17,6 +17,8 @@ import {
   type LoanMovementFormData,
 } from "@/lib/validations/loan";
 import { addMonths, format } from "date-fns";
+import { convertAmount, type RateMap } from "@/lib/currency";
+import type { SupportedCurrency } from "@/lib/types";
 
 // --- Interest calculation helpers ---
 
@@ -513,7 +515,10 @@ export interface LoansSummary {
   totalReceivedFromOthers: number;
 }
 
-export async function getLoansSummary(): Promise<ActionResult<LoansSummary>> {
+export async function getLoansSummary(
+  rates?: RateMap,
+  preferredCurrency?: SupportedCurrency
+): Promise<ActionResult<LoansSummary>> {
   const result = await getLoans();
   if (!result.success || !result.data) {
     return { success: false, error: result.error };
@@ -529,15 +534,21 @@ export async function getLoansSummary(): Promise<ActionResult<LoansSummary>> {
     totalReceivedFromOthers: 0,
   };
 
+  const convert = (amount: number, loanCurrency: string) =>
+    rates && preferredCurrency
+      ? convertAmount(amount, loanCurrency as SupportedCurrency, preferredCurrency, rates)
+      : amount;
+
   for (const loan of loans) {
+    const cur = loan.currency ?? "BRL";
     if (loan.direction === "given") {
-      summary.totalGiven += loan.principal;
-      summary.totalToReceive += loan.current_balance;
-      summary.totalReceivedFromOthers += loan.total_paid;
+      summary.totalGiven += convert(loan.principal, cur);
+      summary.totalToReceive += convert(loan.current_balance, cur);
+      summary.totalReceivedFromOthers += convert(loan.total_paid, cur);
     } else {
-      summary.totalReceived += loan.principal;
-      summary.totalOwed += loan.current_balance;
-      summary.totalPaidByMe += loan.total_paid;
+      summary.totalReceived += convert(loan.principal, cur);
+      summary.totalOwed += convert(loan.current_balance, cur);
+      summary.totalPaidByMe += convert(loan.total_paid, cur);
     }
   }
 
@@ -567,7 +578,10 @@ export interface CounterpartyGroup {
   totalBalance: number;
 }
 
-export async function getLoansConsolidation(): Promise<ActionResult<CounterpartyGroup[]>> {
+export async function getLoansConsolidation(
+  rates?: RateMap,
+  preferredCurrency?: SupportedCurrency
+): Promise<ActionResult<CounterpartyGroup[]>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -632,9 +646,14 @@ export async function getLoansConsolidation(): Promise<ActionResult<Counterparty
 
     const group = groupMap.get(key)!;
     group.loans.push(loanWithSummary);
-    group.totalPrincipal += loan.principal;
-    group.totalPaid += totalPaid;
-    group.totalBalance += Math.round(currentBalance * 100) / 100;
+    const cur = (loan.currency ?? "BRL") as SupportedCurrency;
+    const convertC = (amount: number) =>
+      rates && preferredCurrency
+        ? convertAmount(amount, cur, preferredCurrency, rates)
+        : amount;
+    group.totalPrincipal += convertC(loan.principal);
+    group.totalPaid += convertC(totalPaid);
+    group.totalBalance += convertC(Math.round(currentBalance * 100) / 100);
   }
 
   const groups = Array.from(groupMap.values()).sort((a, b) =>

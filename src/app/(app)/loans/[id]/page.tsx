@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getLoan, getLoanMonthlyBreakdown } from "@/actions/loans";
+import { getUserCurrencyAndRates } from "@/actions/exchange-rates";
 import { LoanMovementList } from "@/components/loans/loan-movement-list";
 import { LoanMovementDialog } from "@/components/loans/loan-movement-dialog";
 import { LoanMonthlyView } from "@/components/loans/loan-monthly-view";
@@ -10,7 +11,7 @@ import {
   LOAN_STATUS_LABELS,
   LOAN_STATUS_COLORS,
 } from "@/lib/constants";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount } from "@/lib/currency";
 import type { SupportedCurrency, LoanDirection, LoanStatus } from "@/lib/types";
 
 export default async function LoanDetailPage({
@@ -19,9 +20,10 @@ export default async function LoanDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [result, breakdownResult] = await Promise.all([
+  const [result, breakdownResult, { preferredCurrency, rates }] = await Promise.all([
     getLoan(id),
     getLoanMonthlyBreakdown(id),
+    getUserCurrencyAndRates(),
   ]);
 
   if (!result.success || !result.data) {
@@ -43,6 +45,26 @@ export default async function LoanDetailPage({
     ? breakdown[breakdown.length - 1].balanceAfter
     : loan.principal;
 
+  const showConverted = currency !== preferredCurrency;
+  const cv = (amount: number) => convertAmount(amount, currency, preferredCurrency, rates);
+
+  function DualValue({ amount, className, colorClass }: { amount: number; className?: string; colorClass?: string }) {
+    return (
+      <>
+        <span className={colorClass ?? "text-foreground font-medium"}>
+          {showConverted
+            ? formatCurrency(cv(amount), preferredCurrency)
+            : formatCurrency(amount, currency)}
+        </span>
+        {showConverted && (
+          <span className="text-xs text-muted-foreground ml-1">
+            {formatCurrency(amount, currency)}
+          </span>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -59,23 +81,23 @@ export default async function LoanDetailPage({
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
             <span className="text-muted-foreground">
-              Valor Inicial: <span className="text-foreground font-medium">{formatCurrency(loan.principal, currency)}</span>
+              Valor Inicial: <DualValue amount={loan.principal} />
             </span>
             {totalAdditions > 0 && (
               <span className="text-muted-foreground">
-                Total Aditivos: <span className="text-purple-400 font-medium">{formatCurrency(totalAdditions, currency)}</span>
+                Total Aditivos: <DualValue amount={totalAdditions} colorClass="text-purple-400 font-medium" />
               </span>
             )}
             <span className="text-muted-foreground">
-              Juros Totais: <span className="text-foreground font-medium">{formatCurrency(totalInterest, currency)}</span>
+              Juros Totais: <DualValue amount={totalInterest} />
             </span>
             {totalPayments > 0 && (
               <span className="text-muted-foreground">
-                Total Pago: <span className="text-green-400 font-medium">{formatCurrency(totalPayments, currency)}</span>
+                Total Pago: <DualValue amount={totalPayments} colorClass="text-green-400 font-medium" />
               </span>
             )}
             <span className="text-muted-foreground">
-              Saldo Atual: <span className="text-foreground font-semibold">{formatCurrency(currentBalance, currency)}</span>
+              Saldo Atual: <DualValue amount={currentBalance} colorClass="text-foreground font-semibold" />
             </span>
           </div>
         </div>
@@ -84,19 +106,21 @@ export default async function LoanDetailPage({
           counterparty={loan.counterparty}
           currentBalance={currentBalance}
           currency={currency}
+          preferredCurrency={preferredCurrency}
+          rates={rates}
         />
       </div>
 
       {/* Monthly breakdown */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Visualização Mensal</h2>
-        <LoanMonthlyView rows={breakdown} currency={currency} />
+        <LoanMonthlyView rows={breakdown} loanCurrency={currency} preferredCurrency={preferredCurrency} rates={rates} />
       </div>
 
       {/* Movements list */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Movimentações</h2>
-        <LoanMovementList payments={payments} loanId={loan.id} currency={currency} />
+        <LoanMovementList payments={payments} loanId={loan.id} loanCurrency={currency} preferredCurrency={preferredCurrency} rates={rates} />
       </div>
 
     </div>

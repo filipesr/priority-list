@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus } from "lucide-react";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount, type RateMap } from "@/lib/currency";
 import type { SupportedCurrency, LoanMovementType } from "@/lib/types";
 
 interface LoanMovementDialogProps {
@@ -47,6 +47,8 @@ interface LoanMovementDialogProps {
   counterparty: string;
   currentBalance: number;
   currency: SupportedCurrency;
+  preferredCurrency: SupportedCurrency;
+  rates: RateMap;
 }
 
 export function LoanMovementDialog({
@@ -54,6 +56,8 @@ export function LoanMovementDialog({
   counterparty,
   currentBalance,
   currency,
+  preferredCurrency,
+  rates,
 }: LoanMovementDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -93,7 +97,10 @@ export function LoanMovementDialog({
         <DialogHeader>
           <DialogTitle>Nova Movimentação</DialogTitle>
           <DialogDescription>
-            {counterparty} — Saldo atual: {formatCurrency(currentBalance, currency)}
+            {counterparty} — Saldo atual:{" "}
+            {currency !== preferredCurrency
+              ? `${formatCurrency(convertAmount(currentBalance, currency, preferredCurrency, rates), preferredCurrency)} (${formatCurrency(currentBalance, currency)})`
+              : formatCurrency(currentBalance, currency)}
           </DialogDescription>
         </DialogHeader>
 

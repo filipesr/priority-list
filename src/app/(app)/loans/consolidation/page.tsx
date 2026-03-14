@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 export default async function LoansConsolidationPage() {
-  const [result, summaryResult, { preferredCurrency }] = await Promise.all([
-    getLoansConsolidation(),
-    getLoansSummary(),
-    getUserCurrencyAndRates(),
+  const { preferredCurrency, rates } = await getUserCurrencyAndRates();
+  const [result, summaryResult] = await Promise.all([
+    getLoansConsolidation(rates, preferredCurrency),
+    getLoansSummary(rates, preferredCurrency),
   ]);
 
   return (
@@ -33,7 +33,7 @@ export default async function LoansConsolidationPage() {
       )}
 
       {result.success ? (
-        <LoanConsolidation groups={result.data ?? []} currency={preferredCurrency} />
+        <LoanConsolidation groups={result.data ?? []} currency={preferredCurrency} rates={rates} />
       ) : (
         <p className="text-destructive">{result.error}</p>
       )}

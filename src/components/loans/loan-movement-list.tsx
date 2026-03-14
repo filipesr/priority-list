@@ -13,7 +13,7 @@ import { Trash2 } from "lucide-react";
 import { deleteLoanMovement } from "@/actions/loans";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount, type RateMap } from "@/lib/currency";
 import {
   LOAN_MOVEMENT_TYPE_LABELS,
   LOAN_MOVEMENT_TYPE_COLORS,
@@ -25,11 +25,15 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 interface LoanMovementListProps {
   payments: LoanPayment[];
   loanId: string;
-  currency: SupportedCurrency;
+  loanCurrency: SupportedCurrency;
+  preferredCurrency: SupportedCurrency;
+  rates: RateMap;
 }
 
-export function LoanMovementList({ payments, loanId, currency }: LoanMovementListProps) {
+export function LoanMovementList({ payments, loanId, loanCurrency, preferredCurrency, rates }: LoanMovementListProps) {
   const router = useRouter();
+  const showConverted = loanCurrency !== preferredCurrency;
+  const cv = (amount: number) => convertAmount(amount, loanCurrency, preferredCurrency, rates);
 
   async function handleDelete(paymentId: string) {
     if (!confirm("Tem certeza que deseja excluir esta movimentação?")) return;
@@ -76,8 +80,30 @@ export function LoanMovementList({ payments, loanId, currency }: LoanMovementLis
                     {LOAN_MOVEMENT_TYPE_LABELS[movType]}
                   </Badge>
                 </TableCell>
-                <TableCell>{formatCurrency(payment.amount, currency)}</TableCell>
-                <TableCell>{formatCurrency(payment.remaining_balance, currency)}</TableCell>
+                <TableCell>
+                  <div>
+                    {showConverted
+                      ? formatCurrency(cv(payment.amount), preferredCurrency)
+                      : formatCurrency(payment.amount, loanCurrency)}
+                  </div>
+                  {showConverted && (
+                    <div className="text-xs text-muted-foreground">
+                      {formatCurrency(payment.amount, loanCurrency)}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    {showConverted
+                      ? formatCurrency(cv(payment.remaining_balance), preferredCurrency)
+                      : formatCurrency(payment.remaining_balance, loanCurrency)}
+                  </div>
+                  {showConverted && (
+                    <div className="text-xs text-muted-foreground">
+                      {formatCurrency(payment.remaining_balance, loanCurrency)}
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {payment.notes ?? "—"}
                 </TableCell>

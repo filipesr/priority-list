@@ -10,18 +10,36 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount, type RateMap } from "@/lib/currency";
 import type { LoanMonthRow, SupportedCurrency } from "@/lib/types";
 
 interface LoanMonthlyViewProps {
   rows: LoanMonthRow[];
-  currency: SupportedCurrency;
+  loanCurrency: SupportedCurrency;
+  preferredCurrency: SupportedCurrency;
+  rates: RateMap;
 }
 
-export function LoanMonthlyView({ rows, currency }: LoanMonthlyViewProps) {
+export function LoanMonthlyView({ rows, loanCurrency, preferredCurrency, rates }: LoanMonthlyViewProps) {
   const [showAll, setShowAll] = useState(false);
 
   const displayRows = showAll ? rows : rows.filter((r) => r.payment > 0 || r.addition > 0);
+  const showConverted = loanCurrency !== preferredCurrency;
+  const cv = (amount: number) => convertAmount(amount, loanCurrency, preferredCurrency, rates);
+
+  function Dual({ amount }: { amount: number }) {
+    return (
+      <>
+        <div>{showConverted ? formatCurrency(cv(amount), preferredCurrency) : formatCurrency(amount, loanCurrency)}</div>
+        {showConverted && <div className="text-xs text-muted-foreground">{formatCurrency(amount, loanCurrency)}</div>}
+      </>
+    );
+  }
+
+  function DualOpt({ amount }: { amount: number }) {
+    if (amount <= 0) return <>{"—"}</>;
+    return <Dual amount={amount} />;
+  }
 
   if (rows.length === 0) {
     return (
@@ -67,19 +85,11 @@ export function LoanMonthlyView({ rows, currency }: LoanMonthlyViewProps) {
               {displayRows.map((row) => (
                 <TableRow key={row.month}>
                   <TableCell className="font-medium">{row.month}</TableCell>
-                  <TableCell>{formatCurrency(row.balanceBefore, currency)}</TableCell>
-                  <TableCell>
-                    {row.interest > 0 ? formatCurrency(row.interest, currency) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {row.payment > 0 ? formatCurrency(row.payment, currency) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {row.addition > 0 ? formatCurrency(row.addition, currency) : "—"}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {formatCurrency(row.balanceAfter, currency)}
-                  </TableCell>
+                  <TableCell><Dual amount={row.balanceBefore} /></TableCell>
+                  <TableCell><DualOpt amount={row.interest} /></TableCell>
+                  <TableCell><DualOpt amount={row.payment} /></TableCell>
+                  <TableCell><DualOpt amount={row.addition} /></TableCell>
+                  <TableCell className="font-medium"><Dual amount={row.balanceAfter} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>

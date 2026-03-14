@@ -19,7 +19,7 @@ import {
   LOAN_STATUS_LABELS,
   LOAN_STATUS_COLORS,
 } from "@/lib/constants";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, convertAmount, type RateMap } from "@/lib/currency";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { SensitiveValue } from "@/components/layout/sensitive-value";
 import type { CounterpartyGroup } from "@/actions/loans";
@@ -28,9 +28,10 @@ import type { SupportedCurrency, LoanDirection, LoanStatus, LoanMonthRow } from 
 interface LoanConsolidationProps {
   groups: CounterpartyGroup[];
   currency: SupportedCurrency;
+  rates: RateMap;
 }
 
-export function LoanConsolidation({ groups, currency }: LoanConsolidationProps) {
+export function LoanConsolidation({ groups, currency, rates }: LoanConsolidationProps) {
   if (groups.length === 0) {
     return (
       <p className="text-muted-foreground text-center py-12">
@@ -42,13 +43,13 @@ export function LoanConsolidation({ groups, currency }: LoanConsolidationProps) 
   return (
     <div className="space-y-4">
       {groups.map((group) => (
-        <CounterpartyCard key={`${group.counterparty}::${group.direction}`} group={group} currency={currency} />
+        <CounterpartyCard key={`${group.counterparty}::${group.direction}`} group={group} currency={currency} rates={rates} />
       ))}
     </div>
   );
 }
 
-function CounterpartyCard({ group, currency }: { group: CounterpartyGroup; currency: SupportedCurrency }) {
+function CounterpartyCard({ group, currency, rates }: { group: CounterpartyGroup; currency: SupportedCurrency; rates: RateMap }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -98,6 +99,7 @@ function CounterpartyCard({ group, currency }: { group: CounterpartyGroup; curre
               key={loan.id}
               loan={loan}
               currency={currency}
+              rates={rates}
             />
           ))}
         </CardContent>
@@ -109,13 +111,18 @@ function CounterpartyCard({ group, currency }: { group: CounterpartyGroup; curre
 function LoanBreakdownSection({
   loan,
   currency,
+  rates,
 }: {
   loan: CounterpartyGroup["loans"][number];
   currency: SupportedCurrency;
+  rates: RateMap;
 }) {
   const [showAll, setShowAll] = useState(false);
   const rows = loan.monthlyBreakdown;
   const displayRows = showAll ? rows : rows.filter((r) => r.payment > 0 || r.addition > 0);
+  const loanCur = (loan.currency ?? "BRL") as SupportedCurrency;
+  const showConverted = loanCur !== currency;
+  const cv = (amount: number) => convertAmount(amount, loanCur, currency, rates);
 
   return (
     <div className="space-y-3 border-t border-border/50 pt-4 first:border-t-0 first:pt-0">
@@ -123,8 +130,15 @@ function LoanBreakdownSection({
         <div className="flex items-center gap-3">
           <div>
             <span className="font-medium text-sm">
-              {formatCurrency(loan.principal, currency)}
+              {showConverted
+                ? formatCurrency(cv(loan.principal), currency)
+                : formatCurrency(loan.principal, currency)}
             </span>
+            {showConverted && (
+              <span className="text-xs text-muted-foreground ml-1">
+                {formatCurrency(loan.principal, loanCur)}
+              </span>
+            )}
             {loan.interest_rate > 0 && (
               <span className="text-muted-foreground text-xs ml-2">
                 {loan.interest_rate}% a.m.
@@ -153,8 +167,12 @@ function LoanBreakdownSection({
       </div>
 
       <div className="flex gap-4 text-xs text-muted-foreground">
-        <span>Pago: <span className="text-foreground font-medium">{formatCurrency(loan.total_paid, currency)}</span></span>
-        <span>Saldo: <span className="text-foreground font-medium">{formatCurrency(loan.current_balance, currency)}</span></span>
+        <span>Pago: <span className="text-foreground font-medium">
+          {showConverted ? formatCurrency(cv(loan.total_paid), currency) : formatCurrency(loan.total_paid, currency)}
+        </span>{showConverted && <span className="ml-1">{formatCurrency(loan.total_paid, loanCur)}</span>}</span>
+        <span>Saldo: <span className="text-foreground font-medium">
+          {showConverted ? formatCurrency(cv(loan.current_balance), currency) : formatCurrency(loan.current_balance, currency)}
+        </span>{showConverted && <span className="ml-1">{formatCurrency(loan.current_balance, loanCur)}</span>}</span>
         {loan.due_date && <span>Vencimento: {loan.due_date}</span>}
       </div>
 
@@ -163,7 +181,7 @@ function LoanBreakdownSection({
           Nenhuma movimentação registrada. Clique em &quot;Completa&quot; para ver todos os meses.
         </p>
       ) : (
-        <MonthlyTable rows={displayRows} currency={currency} showAll={showAll} />
+        <MonthlyTable rows={displayRows} currency={currency} showAll={showAll} loanCurrency={loanCur} rates={rates} />
       )}
     </div>
   );
@@ -173,11 +191,32 @@ function MonthlyTable({
   rows,
   currency,
   showAll,
+  loanCurrency,
+  rates,
 }: {
   rows: LoanMonthRow[];
   currency: SupportedCurrency;
   showAll: boolean;
+  loanCurrency: SupportedCurrency;
+  rates: RateMap;
 }) {
+  const showConverted = loanCurrency !== currency;
+  const cv = (amount: number) => convertAmount(amount, loanCurrency, currency, rates);
+
+  function Dual({ amount }: { amount: number }) {
+    return (
+      <>
+        <div>{showConverted ? formatCurrency(cv(amount), currency) : formatCurrency(amount, loanCurrency)}</div>
+        {showConverted && <div className="text-[10px] text-muted-foreground">{formatCurrency(amount, loanCurrency)}</div>}
+      </>
+    );
+  }
+
+  function DualOpt({ amount }: { amount: number }) {
+    if (amount <= 0) return <>{"—"}</>;
+    return <Dual amount={amount} />;
+  }
+
   return (
     <div className="rounded-md border border-border/50">
       <Table>
@@ -195,19 +234,11 @@ function MonthlyTable({
           {rows.map((row) => (
             <TableRow key={row.month}>
               <TableCell className="text-xs font-medium">{row.month}</TableCell>
-              <TableCell className="text-xs">{formatCurrency(row.balanceBefore, currency)}</TableCell>
-              <TableCell className="text-xs">
-                {row.interest > 0 ? formatCurrency(row.interest, currency) : "—"}
-              </TableCell>
-              <TableCell className="text-xs">
-                {row.payment > 0 ? formatCurrency(row.payment, currency) : "—"}
-              </TableCell>
-              <TableCell className="text-xs">
-                {row.addition > 0 ? formatCurrency(row.addition, currency) : "—"}
-              </TableCell>
-              <TableCell className="text-xs font-medium">
-                {formatCurrency(row.balanceAfter, currency)}
-              </TableCell>
+              <TableCell className="text-xs"><Dual amount={row.balanceBefore} /></TableCell>
+              <TableCell className="text-xs"><DualOpt amount={row.interest} /></TableCell>
+              <TableCell className="text-xs"><DualOpt amount={row.payment} /></TableCell>
+              <TableCell className="text-xs"><DualOpt amount={row.addition} /></TableCell>
+              <TableCell className="text-xs font-medium"><Dual amount={row.balanceAfter} /></TableCell>
             </TableRow>
           ))}
         </TableBody>
