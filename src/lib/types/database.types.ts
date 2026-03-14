@@ -124,6 +124,10 @@ export interface OrcamentoMember {
 
 export type PendenciaStatus = "pending" | "resolved";
 
+export type LoanDirection = "given" | "received";
+export type LoanStatus = "active" | "paid_off";
+export type LoanMovementType = "payment" | "addition";
+
 export type PaymentMode = "single" | "installments";
 
 export interface Pendencia {
@@ -144,4 +148,33 @@ export interface Pendencia {
   created_by_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface Loan {
+  id: string;
+  user_id: string;
+  direction: LoanDirection;
+  counterparty: string;
+  description: string | null;
+  principal: number;
+  currency: SupportedCurrency;
+  interest_rate: number;
+  start_date: string;
+  due_date: string | null;
+  status: LoanStatus;
+  notes: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanPayment {
+  id: string;
+  loan_id: string;
+  amount: number;
+  remaining_balance: number;
+  payment_date: string;
+  type: LoanMovementType;
+  notes: string | null;
+  created_at: string;
 }

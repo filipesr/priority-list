@@ -20,6 +20,11 @@ export type {
   Orcamento,
   OrcamentoMember,
   OrcamentoRole,
+  LoanDirection,
+  LoanStatus,
+  LoanMovementType,
+  Loan,
+  LoanPayment,
 } from "./database.types";
 
 export type ActionResult<T = null> = {
@@ -47,3 +52,25 @@ export type PendenciaFilters = {
   cost_center?: string;
   search?: string;
 };
+
+export type LoanFilters = {
+  direction?: string;
+  status?: string;
+  search?: string;
+};
+
+import type { Loan } from "./database.types";
+
+export type LoanWithSummary = Loan & {
+  total_paid: number;
+  current_balance: number;
+};
+
+export interface LoanMonthRow {
+  month: string;
+  balanceBefore: number;
+  interest: number;
+  payment: number;
+  addition: number;
+  balanceAfter: number;
+}

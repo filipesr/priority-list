@@ -10,6 +10,9 @@ import type {
   IncomeType,
   PendenciaStatus,
   PaymentMode,
+  LoanDirection,
+  LoanStatus,
+  LoanMovementType,
 } from "@/lib/types";
 
 export const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
@@ -238,5 +241,47 @@ export const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = {
 };
 
 export const PAYMENT_MODES = Object.entries(PAYMENT_MODE_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const LOAN_DIRECTION_LABELS: Record<LoanDirection, string> = {
+  given: "Emprestei",
+  received: "Peguei Emprestado",
+};
+
+export const LOAN_DIRECTION_COLORS: Record<LoanDirection, string> = {
+  given: "bg-blue-500/15 text-blue-400 border-blue-500/25",
+  received: "bg-orange-500/15 text-orange-400 border-orange-500/25",
+};
+
+export const LOAN_DIRECTIONS = Object.entries(LOAN_DIRECTION_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
+  active: "Ativo",
+  paid_off: "Quitado",
+};
+
+export const LOAN_STATUS_COLORS: Record<LoanStatus, string> = {
+  active: "bg-yellow-500/15 text-yellow-400 border-yellow-500/25",
+  paid_off: "bg-green-500/15 text-green-400 border-green-500/25",
+};
+
+export const LOAN_STATUSES = Object.entries(LOAN_STATUS_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export const LOAN_MOVEMENT_TYPE_LABELS: Record<LoanMovementType, string> = {
+  payment: "Pagamento",
+  addition: "Aditivo",
+};
+
+export const LOAN_MOVEMENT_TYPE_COLORS: Record<LoanMovementType, string> = {
+  payment: "bg-green-500/15 text-green-400 border-green-500/25",
+  addition: "bg-purple-500/15 text-purple-400 border-purple-500/25",
+};
+
+export const LOAN_MOVEMENT_TYPES = Object.entries(LOAN_MOVEMENT_TYPE_LABELS).map(
   ([value, label]) => ({ value, label })
 );

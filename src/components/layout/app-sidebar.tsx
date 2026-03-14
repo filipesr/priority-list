@@ -11,6 +11,7 @@ import {
   ArrowLeftRight,
   ClipboardList,
   FolderOpen,
+  Handshake,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,6 +34,7 @@ const navItems = [
   { title: "Despesas", href: "/expenses", icon: Receipt },
   { title: "Receitas", href: "/income", icon: TrendingUp },
   { title: "Pendências", href: "/pendencias", icon: ClipboardList },
+  { title: "Empréstimos", href: "/loans", icon: Handshake },
   { title: "Histórico", href: "/history", icon: History },
 ];
 
