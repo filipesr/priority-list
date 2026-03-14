@@ -155,15 +155,16 @@ export function ExpensesWidget({
                     backgroundColor: "#1a2332",
                   }}
                 >
-                  <TextWidget
-                    text={`Concluir "${expense.name}"?`}
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "600",
-                      color: "#f59e0b",
-                      flex: 1,
-                    }}
-                  />
+                  <FlexWidget style={{ flex: 1 }}>
+                    <TextWidget
+                      text={`Concluir "${expense.name}"?`}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: "#f59e0b",
+                      }}
+                    />
+                  </FlexWidget>
                   <FlexWidget style={{ flexDirection: "row", flexGap: 6 }}>
                     <FlexWidget
                       style={{

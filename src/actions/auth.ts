@@ -66,12 +66,15 @@ export async function signUp(
 
 export async function signInWithGoogle(): Promise<ActionResult> {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    (await headers()).get("origin");
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: `${siteUrl}/auth/callback`,
     },
   });
 

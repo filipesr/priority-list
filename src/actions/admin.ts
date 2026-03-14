@@ -52,12 +52,16 @@ export async function getUsers(): Promise<ActionResult<(Profile & { email: strin
     return { success: false, error: "Erro ao buscar usuários" };
   }
 
-  // We can't join auth.users from client SDK, so we'll use the profile data
-  // The email will be fetched separately or stored in profile
-  // For now, return profiles with id as email placeholder
+  // Fetch emails from auth using admin client
+  const admin = createAdminClient();
+  const { data: authUsers } = await admin.auth.admin.listUsers();
+  const emailMap = new Map(
+    (authUsers?.users ?? []).map((u) => [u.id, u.email ?? ""]),
+  );
+
   const usersWithEmail = (profiles ?? []).map((p) => ({
     ...p,
-    email: "", // Will be populated from auth if needed
+    email: emailMap.get(p.id) ?? "",
   }));
 
   return { success: true, data: usersWithEmail };
@@ -97,11 +101,27 @@ export async function approveUser(userId: string): Promise<ActionResult> {
 
   const { data: userProfile } = await admin
     .from("profiles")
-    .select("full_name")
+    .select("full_name, created_at")
     .eq("id", userId)
     .single();
 
   const name = userProfile?.full_name || "Usuário";
+
+  // Set default password for Google OAuth users (yymmdd of their created_at)
+  const { data: authUser } = await admin.auth.admin.getUserById(userId);
+  const isOAuthOnly =
+    authUser?.user?.app_metadata?.provider === "google" &&
+    !authUser?.user?.app_metadata?.providers?.includes("email");
+
+  if (isOAuthOnly && userProfile?.created_at) {
+    const d = new Date(userProfile.created_at);
+    const yy = String(d.getFullYear()).slice(2);
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    await admin.auth.admin.updateUserById(userId, {
+      password: `${yy}${mm}${dd}`,
+    });
+  }
 
   const { data: orcamento } = await admin
     .from("orcamentos")
@@ -157,5 +177,44 @@ export async function rejectUser(userId: string): Promise<ActionResult> {
   }
 
   revalidatePath("/admin");
+  return { success: true };
+}
+
+export async function changeUserPassword(
+  userId: string,
+  newPassword: string,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: "Não autenticado" };
+  }
+
+  const { data: adminProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (adminProfile?.role !== "admin") {
+    return { success: false, error: "Acesso negado" };
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: "Senha deve ter pelo menos 6 caracteres" };
+  }
+
+  const admin = createAdminClient();
+  const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+    password: newPassword,
+  });
+
+  if (updateError) {
+    return { success: false, error: "Erro ao alterar senha" };
+  }
+
   return { success: true };
 }
