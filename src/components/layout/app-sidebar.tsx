@@ -117,6 +117,8 @@ export function AppSidebar({
               <OrcamentoSelector
                 current={selectedOrcamentoId ?? null}
                 orcamentos={orcamentos}
+                role={orcamentos.find((o) => o.id === selectedOrcamentoId)?.role}
+                isAdmin={isAdmin}
               />
             </div>
           </SidebarGroupContent>

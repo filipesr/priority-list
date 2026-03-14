@@ -36,6 +36,7 @@ interface OrcamentoDialogProps {
   onOpenChange: (open: boolean) => void;
   orcamento: OrcamentoWithMembers | null;
   users: (Profile & { email: string })[];
+  readOnly?: boolean;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -49,6 +50,7 @@ export function OrcamentoDialog({
   onOpenChange,
   orcamento,
   users,
+  readOnly,
 }: OrcamentoDialogProps) {
   const isEditing = !!orcamento;
   const [name, setName] = useState(orcamento?.name ?? "");
@@ -149,7 +151,11 @@ export function OrcamentoDialog({
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Editar Orçamento" : "Novo Orçamento"}
+            {readOnly
+              ? "Detalhes do Orçamento"
+              : isEditing
+                ? "Editar Orçamento"
+                : "Novo Orçamento"}
           </DialogTitle>
         </DialogHeader>
 
@@ -162,6 +168,7 @@ export function OrcamentoDialog({
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Orçamento Familiar"
               maxLength={100}
+              disabled={readOnly}
             />
           </div>
 
@@ -181,9 +188,9 @@ export function OrcamentoDialog({
                       <span className="text-sm min-w-0 flex-1 basis-full sm:basis-0 truncate">
                         {getMemberName(member.user_id)}
                       </span>
-                      {member.role === "owner" ? (
+                      {member.role === "owner" || readOnly ? (
                         <Badge variant="secondary" className="text-xs shrink-0">
-                          {ROLE_LABELS.owner}
+                          {ROLE_LABELS[member.role] ?? member.role}
                         </Badge>
                       ) : (
                         <div className="flex items-center gap-1 shrink-0">
@@ -225,7 +232,7 @@ export function OrcamentoDialog({
                 </div>
               )}
 
-              <div className="space-y-2 pt-2 border-t">
+              {!readOnly && <div className="space-y-2 pt-2 border-t">
                 <Label htmlFor="new-member-email" className="text-xs">
                   Adicionar membro por e-mail
                 </Label>
@@ -273,21 +280,29 @@ export function OrcamentoDialog({
                     )}
                   </Button>
                 </div>
-              </div>
+              </div>}
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={isPending}>
-            {isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
-            ) : null}
-            {isEditing ? "Salvar" : "Criar"}
-          </Button>
+          {readOnly ? (
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave} disabled={isPending}>
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : null}
+                {isEditing ? "Salvar" : "Criar"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
