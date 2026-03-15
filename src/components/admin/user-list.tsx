@@ -29,7 +29,7 @@ import { Check, X, KeyRound, Loader2 } from "lucide-react";
 import type { Profile } from "@/lib/types";
 
 interface UserListProps {
-  users: (Profile & { email: string })[];
+  users: (Profile & { email: string; provider: string })[];
 }
 
 export function UserList({ users }: UserListProps) {
@@ -114,6 +114,16 @@ export function UserList({ users }: UserListProps) {
                         {user.email}
                       </span>
                     )}
+                    <Badge
+                      variant="secondary"
+                      className={
+                        user.provider === "google"
+                          ? "ml-2 bg-blue-500/15 text-blue-400 border-blue-500/25"
+                          : "ml-2 bg-zinc-500/15 text-zinc-400 border-zinc-500/25"
+                      }
+                    >
+                      {user.provider === "google" ? "Google" : "Email"}
+                    </Badge>
                   </div>
                 </TableCell>
                 <TableCell>

@@ -22,7 +22,7 @@ export async function isAdmin(): Promise<boolean> {
   return profile?.role === "admin";
 }
 
-export async function getUsers(): Promise<ActionResult<(Profile & { email: string })[]>> {
+export async function getUsers(): Promise<ActionResult<(Profile & { email: string; provider: string })[]>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -58,10 +58,14 @@ export async function getUsers(): Promise<ActionResult<(Profile & { email: strin
   const emailMap = new Map(
     (authUsers?.users ?? []).map((u) => [u.id, u.email ?? ""]),
   );
+  const providerMap = new Map(
+    (authUsers?.users ?? []).map((u) => [u.id, (u.app_metadata?.provider as string) ?? "email"]),
+  );
 
   const usersWithEmail = (profiles ?? []).map((p) => ({
     ...p,
     email: emailMap.get(p.id) ?? "",
+    provider: providerMap.get(p.id) ?? "email",
   }));
 
   return { success: true, data: usersWithEmail };
