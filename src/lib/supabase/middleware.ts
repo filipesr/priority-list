@@ -40,6 +40,7 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/auth") &&
+    !pathname.startsWith("/apk") &&
     pathname !== "/"
   ) {
     const url = request.nextUrl.clone();
