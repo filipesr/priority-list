@@ -146,7 +146,7 @@ export async function approveUser(userId: string): Promise<ActionResult> {
       .eq("id", userId);
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/(app)/admin", "page");
   return { success: true };
 }
 
@@ -180,7 +180,7 @@ export async function rejectUser(userId: string): Promise<ActionResult> {
     return { success: false, error: "Erro ao rejeitar usuário" };
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/(app)/admin", "page");
   return { success: true };
 }
 
