@@ -81,6 +81,7 @@ export function ExpensesWidget({
         width: "match_parent",
         height: "match_parent",
         flexDirection: "column",
+        paddingHorizontal: 4,
       }}
     >
       {/* Header */}
@@ -155,9 +156,10 @@ export function ExpensesWidget({
                     backgroundColor: "#1a2332",
                   }}
                 >
-                  <FlexWidget style={{ flex: 1 }}>
+                  <FlexWidget style={{ flex: 1, marginRight: 6 }}>
                     <TextWidget
                       text={`Concluir "${expense.name}"?`}
+                      maxLines={1}
                       style={{
                         fontSize: 12,
                         fontWeight: "600",
@@ -165,7 +167,7 @@ export function ExpensesWidget({
                       }}
                     />
                   </FlexWidget>
-                  <FlexWidget style={{ flexDirection: "row", flexGap: 6 }}>
+                  <FlexWidget style={{ flexDirection: "row" }}>
                     <FlexWidget
                       style={{
                         backgroundColor: "#166534",
@@ -194,6 +196,7 @@ export function ExpensesWidget({
                         height: 24,
                         justifyContent: "center",
                         alignItems: "center",
+                        marginLeft: 6,
                       }}
                       {...act("CONFIRM_CANCEL")}
                     >
@@ -268,15 +271,18 @@ export function ExpensesWidget({
                         style={{ fontSize: 1, color: "#475569" }}
                       />
                     </FlexWidget>
-                    <TextWidget
-                      text={expense.name}
-                      style={{
-                        fontSize: 13,
-                        fontWeight: "600",
-                        color: "#f8fafc",
-                      }}
-                      {...act("OPEN_APP")}
-                    />
+                    <FlexWidget style={{ flex: 1 }}>
+                      <TextWidget
+                        text={expense.name}
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "600",
+                          color: "#f8fafc",
+                        }}
+                        maxLines={1}
+                        {...act("OPEN_APP")}
+                      />
+                    </FlexWidget>
                   </FlexWidget>
                   <FlexWidget
                     style={{
@@ -303,6 +309,7 @@ export function ExpensesWidget({
                 {/* Row 2: categoria · vencimento · tipo */}
                 <TextWidget
                   text={subtitle}
+                  maxLines={1}
                   style={{
                     fontSize: 10,
                     color: color as ColorProp,

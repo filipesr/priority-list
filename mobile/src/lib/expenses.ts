@@ -84,26 +84,21 @@ export async function addExpenseEntry(
  * (replicates web updateExpenseStatus logic)
  */
 export async function completeExpense(expenseId: string): Promise<void> {
-  const { data: expense, error: fetchError } = await supabase
-    .from("expenses")
-    .select("*")
-    .eq("id", expenseId)
-    .single();
-
-  if (fetchError || !expense) {
-    throw new Error("Despesa não encontrada");
-  }
-
-  const { error: updateError } = await supabase
+  // Update and return the row in a single roundtrip
+  const { data: expense, error: updateError } = await supabase
     .from("expenses")
     .update({
       status: "completed",
       completed_at: new Date().toISOString(),
     })
-    .eq("id", expenseId);
+    .eq("id", expenseId)
+    .select()
+    .single();
 
-  if (updateError) {
-    throw new Error(`Erro ao concluir despesa: ${updateError.message}`);
+  if (updateError || !expense) {
+    throw new Error(
+      `Erro ao concluir despesa: ${updateError?.message ?? "não encontrada"}`,
+    );
   }
 
   // Create next occurrence for recurring expenses

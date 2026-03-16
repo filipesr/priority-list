@@ -4,6 +4,9 @@ import type { Profile } from "../shared/types";
 
 const SELECTED_ORCAMENTO_KEY = "selected_orcamento_id";
 
+// In-memory cache to avoid repeated AsyncStorage reads (especially in widget context)
+let cachedOrcamentoId: string | null = null;
+
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -29,6 +32,7 @@ export async function signIn(email: string, password: string) {
   }
 
   if (typedProfile.selected_orcamento_id) {
+    cachedOrcamentoId = typedProfile.selected_orcamento_id;
     await AsyncStorage.setItem(
       SELECTED_ORCAMENTO_KEY,
       typedProfile.selected_orcamento_id,
@@ -39,18 +43,25 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  cachedOrcamentoId = null;
   await AsyncStorage.removeItem(SELECTED_ORCAMENTO_KEY);
   await supabase.auth.signOut();
 }
 
 export async function getSelectedOrcamentoId(): Promise<string | null> {
+  if (cachedOrcamentoId) return cachedOrcamentoId;
+
   const stored = await AsyncStorage.getItem(SELECTED_ORCAMENTO_KEY);
-  if (stored) return stored;
+  if (stored) {
+    cachedOrcamentoId = stored;
+    return stored;
+  }
 
   // Fallback: fetch from profile (needed in widget headless context
   // where AsyncStorage may not have the value cached)
   const profile = await getProfile();
   if (profile?.selected_orcamento_id) {
+    cachedOrcamentoId = profile.selected_orcamento_id;
     await AsyncStorage.setItem(
       SELECTED_ORCAMENTO_KEY,
       profile.selected_orcamento_id,
