@@ -45,6 +45,7 @@ export async function signIn(email: string, password: string) {
 export async function signOut() {
   cachedOrcamentoId = null;
   await AsyncStorage.removeItem(SELECTED_ORCAMENTO_KEY);
+  await AsyncStorage.removeItem("widget_expenses_cache");
   await supabase.auth.signOut();
 }
 

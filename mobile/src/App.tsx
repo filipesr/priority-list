@@ -9,6 +9,7 @@ import HomeScreen from "./screens/HomeScreen";
 import NewEntryScreen from "./screens/NewEntryScreen";
 import ConfirmCompleteScreen from "./screens/ConfirmCompleteScreen";
 import { getSession } from "./lib/auth";
+import { supabase } from "./lib/supabase";
 import { widgetTaskHandler } from "./widget/widget-task-handler";
 
 export type RootStackParamList = {
@@ -43,7 +44,13 @@ export default function App() {
   useEffect(() => {
     (async () => {
       const session = await getSession();
-      setInitialRoute(session ? "Home" : "Login");
+      if (session) {
+        // Renovar access token na inicialização para evitar usar token expirado
+        await supabase.auth.refreshSession();
+        setInitialRoute("Home");
+      } else {
+        setInitialRoute("Login");
+      }
     })();
   }, []);
 

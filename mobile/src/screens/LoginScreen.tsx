@@ -16,8 +16,8 @@ import type { RootStackParamList } from "../App";
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
 export default function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("movimento.jant@gmail.com");
+  const [password, setPassword] = useState("rezende");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

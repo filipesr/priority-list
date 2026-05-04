@@ -1,9 +1,11 @@
 import React from "react";
 import type { WidgetTaskHandlerProps } from "react-native-android-widget";
+import { requestWidgetUpdate } from "react-native-android-widget";
 import { completeExpense } from "../lib/expenses";
-import { ExpensesWidget } from "./ExpensesWidget";
+import { ExpensesWidget, ExpensesWidgetName } from "./ExpensesWidget";
 import { fetchWidgetData } from "./widget-data";
 import type { WidgetData } from "./widget-data";
+import { getSafeWidgetDimensions } from "./widget-dimensions";
 
 // Cache last fetched data to avoid redundant network calls on UI-only transitions
 let cachedData: WidgetData | null = null;
@@ -25,8 +27,26 @@ async function fetchAndCache(): Promise<WidgetData> {
   return data;
 }
 
+/**
+ * Schedule a re-update after a short delay. Handles the case where Samsung
+ * launchers report 0×0 on WIDGET_ADDED but correct dimensions on WIDGET_UPDATE.
+ */
+function scheduleRetry() {
+  setTimeout(() => {
+    requestWidgetUpdate({
+      widgetName: ExpensesWidgetName,
+      renderWidget: () =>
+        React.createElement(ExpensesWidget, {
+          expenses: cachedData?.expenses ?? [],
+          error: cachedData?.error,
+        }),
+    }).catch(() => {});
+  }, 1500);
+}
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
-  const { widgetAction, renderWidget } = props;
+  const { widgetAction, renderWidget, widgetInfo } = props;
+  const safeDims = getSafeWidgetDimensions(widgetInfo);
 
   switch (widgetAction) {
     case "WIDGET_ADDED":
@@ -34,6 +54,10 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     case "WIDGET_RESIZED": {
       const data = await fetchAndCache();
       render(renderWidget, data.expenses, data.error);
+      // If the launcher reported invalid dimensions, schedule a retry
+      if (safeDims.usedFallback && widgetAction === "WIDGET_ADDED") {
+        scheduleRetry();
+      }
       break;
     }
 

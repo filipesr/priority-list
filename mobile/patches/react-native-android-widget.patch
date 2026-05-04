@@ -1,0 +1,102 @@
+diff --git a/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java b/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java
+index 2a34305ac71b05db0e1220c34729332926d18138..0b05f965bc59c60ad406000169e4f7d37994482e 100644
+--- a/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java
++++ b/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java
+@@ -14,25 +14,71 @@ import com.facebook.react.bridge.ReactApplicationContext;
+ import com.facebook.react.bridge.WritableArray;
+ import com.facebook.react.bridge.WritableMap;
+ 
++import java.util.HashMap;
+ import java.util.List;
++import java.util.Map;
+ 
+ public class RNWidgetUtil {
++    // Cache last valid dimensions per widgetId to survive transient 0-reports
++    private static final Map<Integer, int[]> sLastValidSize = new HashMap<>();
++
+     public static int getWidgetWidth(Context context, int widgetId) {
+         boolean isPortrait = context.getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
++        int size;
+         if (isPortrait) {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
++            size = getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
+         } else {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH);
++            size = getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH);
+         }
++        return ensureValidDimension(widgetId, 0, size, context);
+     }
+ 
+     public static int getWidgetHeight(Context context, int widgetId) {
+         boolean isPortrait = context.getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
++        int size;
+         if (isPortrait) {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
++            size = getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+         } else {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
++            size = getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
++        }
++        return ensureValidDimension(widgetId, 1, size, context);
++    }
++
++    /**
++     * Ensures a dimension value is usable. If the launcher reports 0 or negative
++     * (Samsung S24+, Galaxy A13 on first WIDGET_ADDED — see GitHub issue #34),
++     * falls back to: cached value → AppWidgetProviderInfo.minWidth/minHeight → 200dp.
++     *
++     * @param idx 0 = width, 1 = height
++     */
++    private static int ensureValidDimension(int widgetId, int idx, int reportedDp, Context context) {
++        if (reportedDp > 0) {
++            int[] cached = sLastValidSize.get(widgetId);
++            if (cached == null) {
++                cached = new int[]{0, 0};
++            }
++            cached[idx] = reportedDp;
++            sLastValidSize.put(widgetId, cached);
++            return reportedDp;
+         }
++
++        // Try cached value from a previous successful read
++        int[] cached = sLastValidSize.get(widgetId);
++        if (cached != null && cached[idx] > 0) {
++            return cached[idx];
++        }
++
++        // Fallback to the provider's minWidth/minHeight (in px) → convert to dp
++        AppWidgetProviderInfo info = AppWidgetManager.getInstance(context).getAppWidgetInfo(widgetId);
++        if (info != null) {
++            float density = context.getResources().getDisplayMetrics().density;
++            int fallback = Math.round((idx == 0 ? info.minWidth : info.minHeight) / density);
++            if (fallback > 0) {
++                return fallback;
++            }
++        }
++
++        return 200; // absolute last resort
+     }
+ 
+     public static int dpToPx(Context context, double dpValue) {
+diff --git a/android/src/main/res/layout/rn_widget.xml b/android/src/main/res/layout/rn_widget.xml
+index 6651155698bf50070bf0724dd7ecf02a3da88a7e..a0bab8c68caf24d42d6b449c0a5d42fdf5369bf3 100644
+--- a/android/src/main/res/layout/rn_widget.xml
++++ b/android/src/main/res/layout/rn_widget.xml
+@@ -8,7 +8,7 @@
+         android:layout_width="match_parent"
+         android:layout_height="match_parent"
+         android:background="@android:color/transparent"
+-        android:scaleType="matrix"
++        android:scaleType="fitXY"
+         android:visibility="visible" />
+ 
+     <ImageView
+@@ -16,7 +16,7 @@
+         android:layout_width="match_parent"
+         android:layout_height="match_parent"
+         android:background="@android:color/transparent"
+-        android:scaleType="matrix"
++        android:scaleType="fitXY"
+         android:visibility="gone" />
+ 
+     <FrameLayout

@@ -16,6 +16,9 @@ import { signOut } from "../lib/auth";
 import type { Expense } from "../shared/types";
 import { formatCurrency, getDueDateDisplay } from "../lib/format";
 import { refreshWidget } from "../lib/widget-update";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const CACHE_KEY = "widget_expenses_cache";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -28,8 +31,15 @@ export default function HomeScreen({ navigation }: Props) {
     try {
       const data = await getWidgetExpenses();
       setExpenses(data);
+      // Salvar no cache compartilhado com o widget
+      AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data)).catch(() => {});
     } catch (err) {
       console.error("Error fetching expenses:", err);
+      // Fallback: carregar do cache offline
+      try {
+        const raw = await AsyncStorage.getItem(CACHE_KEY);
+        if (raw) setExpenses(JSON.parse(raw));
+      } catch {}
     } finally {
       setLoading(false);
       setRefreshing(false);

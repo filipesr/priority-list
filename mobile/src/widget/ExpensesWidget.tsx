@@ -26,7 +26,7 @@ const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
 };
 
 const TYPE_ICONS: Record<ExpenseType, string> = {
-  recorrente: "\u267B",
+  recorrente: "⟳",
   esporadico: "\u2022",
   imprevisto: "\u2022",
 };
@@ -57,7 +57,7 @@ export function ExpensesWidget({
       <FlexWidget
         style={{
           backgroundColor: "#1e293b",
-          borderRadius: 16,
+          borderRadius: 12,
           padding: 16,
           width: "match_parent",
           height: "match_parent",
@@ -77,10 +77,14 @@ export function ExpensesWidget({
     <FlexWidget
       style={{
         backgroundColor: "#1e293b",
-        borderRadius: 16,
+        borderRadius: 12,
         width: "match_parent",
         height: "match_parent",
         flexDirection: "column",
+        overflow: "hidden",
+        // Defensive inner padding — absorbs the ~3-4dp that borderRadius
+        // curves eat into content area and compensates for bitmap stretch
+        // when launcher-reported size < actual container (issue #34).
         paddingHorizontal: 4,
       }}
     >
@@ -135,8 +139,8 @@ export function ExpensesWidget({
           />
         </FlexWidget>
       ) : (
-        <FlexWidget style={{ width: "match_parent", flexDirection: "column" }}>
-          {expenses.slice(0, 5).map((expense) => {
+        <FlexWidget style={{ flex: 1, width: "match_parent", flexDirection: "column" }}>
+          {expenses.map((expense) => {
             const isConfirming = confirmingId === expense.id;
 
             if (isConfirming) {
